@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:cache="http://www.springframework.org/schema/cache" xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd
+        http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd
+        http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache-4.0.xsd
+        http://www.springframework.org/schema/util  http://www.springframework.org/schema/util/spring-util-4.0.xsd  ">
+
+        
+	<context:component-scan base-package="com.gome.*"></context:component-scan>
+
+	<context:annotation-config></context:annotation-config>
+
+	<bean id="configProperties"
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="ignoreResourceNotFound" value="true" />
+		<property name="locations">
+			<list>
+				<value>classpath:gcache.properties</value>
+			</list>
+		</property>
+	</bean>
+
+	<mvc:interceptors>
+		<bean class="com.gome.util.ExecutionTimeInterceptor"></bean>
+		<!-- <bean class="com.gome.util.ExecutionTimeInterceptor"></bean> -->
+		<mvc:interceptor>
+			<mvc:mapping path="/*" />
+
+			<bean class="com.gome.util.ExecutionTimeInterceptor"></bean>
+		</mvc:interceptor>
+
+	</mvc:interceptors>
+
+
+	<mvc:annotation-driven></mvc:annotation-driven>
+
+
+	<mvc:default-servlet-handler />
+	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close">
+		<property name="driverClassName" value="org.apache.kylin.jdbc.Driver" />
+		<property name="url"
+			value="jdbc:kylin://10.58.72.28:7070/session_thermodynamic_chart" />
+		<property name="username" value="ADMIN" />
+		<property name="password" value="KYLIN" />
+		<!-- 初始化连接大小 -->
+		<property name="initialSize" value="20"></property>
+		<!-- 连接池最大数量 -->
+		<property name="maxActive" value="10000"></property>
+		<!-- 连接池最大空闲 -->
+		<property name="maxIdle" value="20"></property>
+		<!-- 连接池最小空闲 -->
+		<property name="minIdle" value="20"></property>
+		<!-- 获取连接最大等待时间 -->
+		<property name="maxWait" value="1000"></property>
+	</bean>
+
+	<!-- 页面路径分析的datasource -->
+	<bean id="pathAnalyseDataSource" class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close">
+		<property name="driverClassName" value="org.apache.kylin.jdbc.Driver" />
+		<property name="url"
+			value="jdbc:kylin://10.58.72.28:7070/session_path_analyse" />
+		<property name="username" value="ADMIN" />
+		<property name="password" value="KYLIN" />
+		<!-- 初始化连接大小 -->
+		<property name="initialSize" value="20"></property>
+		<!-- 连接池最大数量 -->
+		<property name="maxActive" value="10000"></property>
+		<!-- 连接池最大空闲 -->
+		<property name="maxIdle" value="20"></property>
+		<!-- 连接池最小空闲 -->
+		<property name="minIdle" value="20"></property>
+		<!-- 获取连接最大等待时间 -->
+		<property name="maxWait" value="1000"></property>
+	</bean>
+	
+	<!-- plus的datasource -->
+	<bean id="pathAnalysePlusDataSource" class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close">
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="url"
+			value="jdbc:mysql://atlas01.ic.pro.gomeplus.com:8806/dataplatform?useUnicode=true&amp;characterEncoding=utf-8" />
+		<property name="username" value="gome_dplatform" />
+		<property name="password" value="eHA5gdKKui" />
+		<!-- 初始化连接大小 -->
+		<property name="initialSize" value="20"></property>
+		<!-- 连接池最大数量 -->
+		<property name="maxActive" value="10000"></property>
+		<!-- 连接池最大空闲 -->
+		<property name="maxIdle" value="20"></property>
+		<!-- 连接池最小空闲 -->
+		<property name="minIdle" value="20"></property>
+		<!-- 获取连接最大等待时间 -->
+		<property name="maxWait" value="1000"></property>
+	</bean>
+
+
+	<!--点击热力图 -->
+	<bean id="clickDataSource" class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close">
+		<property name="driverClassName" value="org.apache.kylin.jdbc.Driver" />
+		<property name="url" value="jdbc:kylin://10.58.72.21:7070/test_kafka" />
+		<property name="username" value="ADMIN" />
+		<property name="password" value="KYLIN" />
+		<!-- 初始化连接大小 -->
+		<property name="initialSize" value="20"></property>
+		<!-- 连接池最大数量 -->
+		<property name="maxActive" value="10000"></property>
+		<!-- 连接池最大空闲 -->
+		<property name="maxIdle" value="20"></property>
+		<!-- 连接池最小空闲 -->
+		<property name="minIdle" value="20"></property>
+		<!-- 获取连接最大等待时间 -->
+		<property name="maxWait" value="1000"></property>
+	</bean>
+	
+	<bean id="plusHotMapDataSource" class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close">
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="url"
+			value="jdbc:mysql://atlas01.ic.pro.gomeplus.com:8806/dataplatform?useUnicode=true&amp;characterEncoding=utf-8" />
+		<property name="username" value="gome_dplatform" />
+		<property name="password" value="eHA5gdKKui" />
+		<!-- 初始化连接大小 -->
+		<property name="initialSize" value="20"></property>
+		<!-- 连接池最大数量 -->
+		<property name="maxActive" value="10000"></property>
+		<!-- 连接池最大空闲 -->
+		<property name="maxIdle" value="20"></property>
+		<!-- 连接池最小空闲 -->
+		<property name="minIdle" value="20"></property>
+		<!-- 获取连接最大等待时间 -->
+		<property name="maxWait" value="1000"></property>
+	</bean>
+
+	<!--页面流量 -->
+	<bean id="pageFlowDataSource" class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close">
+		<property name="driverClassName" value="org.apache.kylin.jdbc.Driver" />
+		<property name="url" value="jdbc:kylin://10.58.72.28:7070/page_flow" />
+		<property name="username" value="ADMIN" />
+		<property name="password" value="KYLIN" />
+		<!-- 初始化连接大小 -->
+		<property name="initialSize" value="20"></property>
+		<!-- 连接池最大数量 -->
+		<property name="maxActive" value="10000"></property>
+		<!-- 连接池最大空闲 -->
+		<property name="maxIdle" value="20"></property>
+		<!-- 连接池最小空闲 -->
+		<property name="minIdle" value="20"></property>
+		<!-- 获取连接最大等待时间 -->
+		<property name="maxWait" value="1000"></property>
+	</bean>
+
+	<!-- 活动也商品分析的datasource -->
+	<bean id="promSkuAnalyseDataSource" class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close">
+		<property name="driverClassName" value="org.apache.kylin.jdbc.Driver" />
+		<property name="url"
+			value="jdbc:kylin://10.58.72.28:7070/session_prom_sku" />
+		<property name="username" value="ADMIN" />
+		<property name="password" value="KYLIN" />
+		<!-- 初始化连接大小 -->
+		<property name="initialSize" value="20"></property>
+		<!-- 连接池最大数量 -->
+		<property name="maxActive" value="10000"></property>
+		<!-- 连接池最大空闲 -->
+		<property name="maxIdle" value="20"></property>
+		<!-- 连接池最小空闲 -->
+		<property name="minIdle" value="20"></property>
+		<!-- 获取连接最大等待时间 -->
+		<property name="maxWait" value="1000"></property>
+	</bean>
+
+
+	<bean
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="prefix" value="/" />
+		<property name="suffix" value=".jsp" />
+		<property name="viewClass"
+			value="org.springframework.web.servlet.view.JstlView" />
+	</bean>
+
+	<!-- ES 配置 -->
+	<bean id="esClient" class="com.gome.elasticsearch.ESClient"
+		destroy-method="close">
+		<constructor-arg value="gomebigdata-elasticsearch"></constructor-arg>
+		<constructor-arg value="10.58.72.16:9901,10.58.72.15:9901,10.58.72.17:9901"></constructor-arg>
+
+	</bean>
+
+
+	<!-- Gcache 配置 -->
+	<bean id="gcache" class="redis.GcacheClient" destroy-method="close">
+		<!-- 测试环境Gcache -->
+		<!-- <constructor-arg value="10.58.22.191:2181,10.58.22.192:2181,10.58.22.193:2181,10.58.50.149:2181,10.58.50.150:2181" 
+			/> -->
+		<constructor-arg
+			value="10.58.22.191:2181,10.58.22.192:2181,10.58.22.193:2181,10.58.50.149:2181,10.58.50.150:2181"></constructor-arg>
+		<constructor-arg value="BIGDATA_RT_ANALYSIS" />
+	</bean>
+
+	<bean id="sqlTime" class="com.gome.util.SqlExecTimeInterceptor"></bean>
+	<!-- spring和MyBatis完美整合，不需要mybatis的配置映射文件 -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		
+		<!-- 自动扫描mapping.xml文件 -->
+		<property name="mapperLocations" value="classpath:mybatis/mappings/*.xml"></property>
+	</bean>
+
+	<!-- DAO接口所在包名，Spring会自动查找其下的类 -->
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.gome.dao" />
+
+		<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"></property>
+	</bean>
+
+
+	<!-- 页面路径分析的mybatis配置 -->
+	<bean id="pathAnalyseSqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="pathAnalyseDataSource" />
+		<!-- 自动扫描mapping.xml文件 -->
+
+		<property name="mapperLocations" value="classpath:mybatis/path_analyse/*.xml"></property>
+	</bean>
+
+	<!-- DAO接口所在包名，Spring会自动查找其下的类 -->
+	<bean id="pathAnalyseMybatisScanner" class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.gome.pathanalyse.dao" />
+		<property name="sqlSessionFactoryBeanName" value="pathAnalyseSqlSessionFactory"></property>
+	</bean>
+	
+	<!-- 页面路径分析plus的mybatis配置 -->
+	<bean id="pathAnalysePlusSqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="pathAnalysePlusDataSource" />
+		<!-- 自动扫描mapping.xml文件 -->
+
+		<property name="mapperLocations" value="classpath:mybatis/path_analyse_plus/*.xml"></property>
+	</bean>
+	
+
+	<!-- DAO接口所在包名，Spring会自动查找其下的类plus -->
+	<bean id="pathAnalysePlusMybatisScanner" class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.gome.pathanalyseplus.dao" />
+		<property name="sqlSessionFactoryBeanName" value="pathAnalysePlusSqlSessionFactory"></property>
+	</bean>
+
+
+	<!-- 点击热力图的mybatis配置 -->
+	<bean id="clickSqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="clickDataSource" />
+		<!-- 自动扫描mapping.xml文件 -->
+		<property name="mapperLocations" value="classpath:mybatis/click/*.xml"></property>
+	</bean>
+
+	<!-- DAO接口所在包名，Spring会自动查找其下的类 -->
+	<bean id="clickMybatisScanner" class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.gome.clickmap.dao" />
+		<property name="sqlSessionFactoryBeanName" value="clickSqlSessionFactory"></property>
+	</bean>
+
+	<!-- PLUS热力图的mybatis配置 -->
+	<bean id="plusHotMapSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="plusHotMapDataSource" />
+		<!-- 自动扫描mapping.xml文件 -->
+		<property name="mapperLocations" value="classpath:mybatis/plus/*.xml"></property>
+	</bean>
+	<!-- DAO接口所在包名，Spring会自动查找其下的类 -->
+	<bean id="plusHotMapMybatisScanner" class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.gome.plus.dao" />
+		<property name="sqlSessionFactoryBeanName" value="plusHotMapSessionFactory"></property>
+	</bean>
+
+
+
+	<!-- 页面流量的mybatis配置 -->
+	<bean id="pageFlowSqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="pageFlowDataSource" />
+
+		<!-- 打印SQL测试环境打开，正式环境注释掉 -->
+		<property name="plugins">
+			<array value-type="org.apache.ibatis.plugin.Interceptor">
+				<ref bean="sqlTime" />
+			</array>
+		</property>
+		<!-- 自动扫描mapping.xml文件 -->
+		<property name="mapperLocations" value="classpath:mybatis/pageflow/*.xml"></property>
+	</bean>
+
+	<!-- DAO接口所在包名，Spring会自动查找其下的类 -->
+	<bean id="pageFlowMybatisScanner" class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.gome.pageflow.dao" />
+
+		<property name="sqlSessionFactoryBeanName" value="pageFlowSqlSessionFactory"></property>
+	</bean>
+	
+	<!-- 页面流量plus的mybatis配置 -->
+	<bean id="pageFlowPlusSqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="pathAnalysePlusDataSource" />
+
+		<!-- 打印SQL测试环境打开，正式环境注释掉 -->
+		<property name="plugins">
+			<array value-type="org.apache.ibatis.plugin.Interceptor">
+				<ref bean="sqlTime" />
+			</array>
+		</property>
+		<!-- 自动扫描mapping.xml文件 -->
+		<property name="mapperLocations" value="classpath:mybatis/pageflowPlus/*.xml"></property>
+	</bean>
+
+	<!-- 页面流量plus DAO接口所在包名，Spring会自动查找其下的类 -->
+	<bean id="pageFlowPlusMybatisScanner" class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.gome.pageflowplus.dao" />
+
+		<property name="sqlSessionFactoryBeanName" value="pageFlowPlusSqlSessionFactory"></property>
+	</bean>
+	
+	<!-- 活动页商品分析的mybatis配置 -->
+	<bean id="promSkuAnalyseSqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="promSkuAnalyseDataSource" />
+		<!-- 自动扫描mapping.xml文件 -->
+
+		<property name="mapperLocations" value="classpath:mybatis/prom_sku_analyse/*.xml"></property>
+	</bean>
+
+	<!-- DAO接口所在包名，Spring会自动查找其下的类 -->
+	<bean id="promSkuAnalyseMybatisScanner" class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.gome.promsku.dao" />
+		<property name="sqlSessionFactoryBeanName" value="promSkuAnalyseSqlSessionFactory"></property>
+	</bean>
+
+</beans>

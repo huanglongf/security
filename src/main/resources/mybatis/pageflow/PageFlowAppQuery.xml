@@ -1,0 +1,443 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.gome.pageflow.dao.PageFlowAppDao">
+
+
+
+	<resultMap type="com.gome.pageflow.model.PageFlow" id="pageflowTopN">
+
+		<result property="pageContent" column="pageContent" />
+		<result property="visitor" column="visitor" />
+		<result property="uv" column="uv" />
+		<result property="pv" column="pv" />
+		<result property="viewTime" column="viewTime" />
+		<result property="entries" column="entries" />
+		<result property="fpv" column="fpv" />
+		<result property="takeOrdercount" column="ordercount" />
+		<result property="bounces" column="bounces" />
+		<result property="exits" column="exits" />
+		<result property="takeOrderAmount" column="orderamount" />
+	</resultMap>
+
+	<resultMap type="com.gome.pageflow.model.PageFlow" id="pageflowAllstation">
+		<result property="visitor" column="visitor" />
+		<result property="uv" column="uv" />
+		<result property="pv" column="pv" />
+		<result property="viewTime" column="viewTime" />
+		<result property="entries" column="entries" />
+		<result property="fpv" column="fpv" />
+		<result property="takeOrdercount" column="ordercount" />
+		<result property="bounces" column="bounces" />
+		<result property="exits" column="exits" />
+		<result property="takeOrderAmount" column="orderamount" />
+	</resultMap>
+
+
+	<resultMap type="com.gome.pageflow.model.PageFlow" id="pageflowchart">
+		<result property="date" column="showDate" />
+		<result property="pageContent" column="pageContent" />
+		<result property="visitor" column="visitor" />
+		<result property="uv" column="uv" />
+		<result property="pv" column="pv" />
+		<result property="viewTime" column="viewTime" />
+		<result property="entries" column="entries" />
+		<result property="fpv" column="fpv" />
+		<result property="takeOrdercount" column="ordercount" />
+		<result property="bounces" column="bounces" />
+		<result property="exits" column="exits" />
+		<result property="takeOrderAmount" column="orderamount" />
+	</resultMap>
+
+	<resultMap type="com.gome.pageflow.model.PageFlow" id="pageflowAllStartChart">
+		<result property="date" column="showDate" />
+		<result property="visitor" column="visitor" />
+		<result property="uv" column="uv" />
+		<result property="pv" column="pv" />
+		<result property="viewTime" column="viewTime" />
+		<result property="entries" column="entries" />
+		<result property="fpv" column="fpv" />
+		<result property="takeOrdercount" column="ordercount" />
+		<result property="bounces" column="bounces" />
+		<result property="exits" column="exits" />
+		<result property="takeOrderAmount" column="orderamount" />
+	</resultMap>
+
+
+
+	<resultMap type="com.gome.pageflow.model.PageFlow" id="pageflowclick">
+
+		<result property="pageContent" column="pageContent" />
+		<result property="date" column="showDate" />
+		<result property="click" column="click" />
+	</resultMap>
+
+
+
+
+	<!-- Pv topN -->
+	<select id="queryPvTopN" resultType="java.lang.String">
+
+		select ${dim} from (select
+		${dim} ,sum(pv) as pv from
+		<if test="dim =='prefixurl'">
+			page_flow_pv
+		</if>
+
+		<if test="dim =='pagetype'">
+			page_flow_app
+		</if>
+		where dt
+
+		between '${startTime}' and '${endTime}' and
+		datasource='${dataSource}' group by ${dim} order by pv
+		desc limit 1000
+		offset 0)
+		<if test="dim =='pagetype'">
+			where pagetype &lt;&gt;''
+		</if>
+
+		limit 1000 offset 0
+		<!-- limit ${pageSize} offset ${pageStart} -->
+
+	</select>
+
+
+	<!-- topN汇总数 -->
+	<select id="querytotalCountTopN" resultType="java.lang.Long">
+
+		select count(*) from
+		( select ${dim} ,sum(pv) as pv from
+
+		<if test="dim =='pagetype'">
+			page_flow_app
+		</if>
+		where dt between
+		'${startTime}' and '${endTime}' and
+		datasource='${dataSource}'
+		group by
+		${dim} order by pv desc limit 1000
+		offset 0 )
+
+		<if test="dim =='pagetype'">
+			where pagetype &lt;&gt;''
+		</if>
+	</select>
+
+	<!-- 查询全站的信息 -->
+	<select id="queryAllStation" resultMap="pageflowAllstation">
+
+		select sum(visitor) as
+		visitor,sum(uv) as uv,sum(pv) as
+		pv,sum(bounces) as
+		bounces,sum(exits)
+		as exits,sum(viewtime) as
+		viewTime ,sum(entries) as
+		entries,sum(ordercount) as
+		ordercount,sum(orderamount) as
+		orderamount
+		from ( select dt, count(distinct sessionid) as
+		visitor,count(distinct
+		visitorid) as uv,sum(pv) as
+		pv,sum(bounces) as
+		bounces,sum(exits) as
+		exits,sum(viewtime) as
+		viewTime ,
+		sum(entries) as
+		entries,
+		max(takeordercount) as ordercount,max(takeorderamount) as
+		orderamount
+		from
+		page_flow_app where dt between
+		'${startTime}'
+		and '${endTime}' and
+		datasource='${dataSource}' group by
+		dt )
+
+	</select>
+
+	<!-- 查询全站的信息 -->
+	<select id="queryAllStationGroup" resultMap="pageflowAllStartChart">
+
+		select
+		<if test="showHour=='hour'">
+			"HOUR"
+		</if>
+		<if test="showHour=='day'">
+			dt
+		</if>
+		as showDate,
+		count(distinct
+		sessionid) as visitor,count(distinct
+		visitorid) as
+		uv,sum(pv) as
+		pv,sum(bounces) as bounces,sum(exits) as
+		exits,sum(viewtime) as
+		viewTime ,
+		sum(entries) as
+		entries,sum(ordercount) as
+		ordercount,sum(orderamount) as
+		orderamount,
+		sum(followingpv) as fpv from
+		page_flow_app where dt between
+		'${startTime}'
+		and '${endTime}' and
+		datasource='${dataSource}'
+
+		<if test="showHour=='hour'">
+			and "HOUR" &gt;= '${hourFilter}'
+			group by "HOUR"
+		</if>
+		<if test="showHour=='day'">
+
+			group by dt
+		</if>
+
+	</select>
+
+
+
+	<!-- 根据TopN查询所有的信息 -->
+	<select id="queryAllTopN" resultMap="pageflowTopN">
+
+		select pageContent, sum(visitor) as visitor,sum(uv) as
+		uv,sum(pv) as
+		pv,sum(bounces) as bounces,sum(exits) as
+		exits,sum(viewtime) as
+		viewTime ,sum(entries) as
+		entries,sum(ordercount) as
+		ordercount,sum(orderamount) as
+		orderamount,sum(fpv) as fpv from (
+		select
+		<if test="dim !='' and dim !=null ">
+			${dim}
+		</if>
+
+		<if test="dim =='' or dim =null ">
+			prefixurl
+		</if>
+		as pageContent,dt,
+		count(distinct sessionid) as visitor,count(distinct
+		visitorid) as
+		uv,sum(pv) as
+		pv,sum(bounces) as bounces,sum(exits) as
+		exits,sum(viewtime) as
+		viewTime ,sum(entries) as
+		entries,sum(ordercount) as
+		ordercount,sum(orderamount) as
+		orderamount,sum(followingpv) as fpv from
+		page_flow_app where dt
+		between
+		'${startTime}' and '${endTime}' and
+		datasource='${dataSource}'
+		<if test="dim !='' and dim !=null ">
+			and ${dim} in
+			<foreach item="item" index="index" collection="urls" open="("
+				separator="," close=")">
+				'${item}'
+			</foreach>
+
+		</if>
+		group by ${dim},dt ) group by pageContent
+
+		<if test="orderField !=null and orderField !='' and orderField !='null' ">
+			order by ${orderField} desc
+		</if>
+		limit ${pageSize} offset ${pageStart}
+
+	</select>
+
+
+	<select id="queryPage" resultMap="pageflowchart">
+
+		select
+
+		<if test="dim !=null and dim !=''">
+			${dim} as pageContent,
+		</if>
+
+		<if test="showHour=='hour'">
+			"HOUR" as showDate,
+		</if>
+		<if test="showHour=='day'">
+			dt as showDate,
+		</if>
+		count(distinct sessionid) as visitor,count(distinct visitorid) as
+		uv,sum(pv) as pv,sum(bounces) as bounces,sum(exits) as
+		exits,sum(viewtime) as viewTime ,sum(entries) as
+		entries,sum(ordercount) as ordercount,sum(orderamount) as
+		orderamount,sum(followingpv) as fpv from page_flow_app where dt
+		between
+		'${startTime}'
+		and '${endTime}' and datasource='${dataSource}'
+		<if test="showHour=='hour'">
+			and "HOUR" &gt;= '${hourFilter}'
+		</if>
+
+		and ${dim} in
+
+		<foreach item="item" index="index" collection="urls" open="("
+			separator="," close=")">
+			'${item}'
+		</foreach>
+
+
+
+
+
+		group by
+
+		<if test="showHour=='hour'">
+			"HOUR"
+		</if>
+
+		<if test="showHour=='day'">
+			dt
+		</if>
+
+		<if test="dim !=null and dim !=''">
+			,${dim}
+		</if>
+
+		order by
+		<if test="dim !=null and dim !=''">
+			${dim},
+		</if>
+		<if test="showHour=='hour'">
+			"HOUR"
+		</if>
+
+		<if test="showHour=='day'">
+			dt
+		</if>
+
+		asc
+
+
+	</select>
+
+
+	<select id="querySearchCount" resultType="java.lang.Long">
+		select count(*) from ( select count(1) from
+		page_flow_app where dt
+		between '${startTime}' and
+		'${endTime}' and
+		datasource='${dataSource}'
+		<if test="dim !='' and dim !=null ">
+			and ${dim} in
+			<foreach item="item" index="index" collection="urls" open="("
+				separator="," close=")">
+				'${item}'
+			</foreach>
+
+		</if>
+		group by ${dim} )
+	</select>
+
+	<select id="querySearchPageTotal" resultMap="pageflowAllstation">
+		select
+		sum(visitor) as visitor,sum(uv) as
+		uv,sum(pv) as
+		pv,sum(bounces)
+		as bounces,sum(exits) as
+		exits,sum(viewtime) as
+		viewTime ,
+		sum(entries)
+		as
+		entries,sum(ordercount) as
+		ordercount,sum(orderamount) as
+		orderamount,
+		sum(fpv) as fpv from (
+		select dt,
+		count(distinct sessionid)
+		as visitor,count(distinct
+		visitorid) as
+		uv,sum(pv) as
+		pv,sum(bounces) as
+		bounces,sum(exits) as
+		exits,sum(viewtime) as
+		viewTime ,
+		sum(entries) as
+		entries,sum(ordercount) as
+		ordercount,sum(orderamount) as
+		orderamount,
+		sum(followingpv) as fpv from
+		page_flow_app where dt between
+		'${startTime}'
+		and '${endTime}' and datasource='${dataSource}'
+		<if test="dim !='' and dim !=null ">
+			and ${dim} in
+			<foreach item="item" index="index" collection="urls" open="("
+				separator="," close=")">
+				'${item}'
+			</foreach>
+
+		</if>
+
+		group by dt)
+	</select>
+
+	<select id="querySearchPageChart" resultMap="pageflowAllStartChart">
+		select
+		<if test="showHour=='hour'">
+			"HOUR"
+		</if>
+		<if test="showHour=='day'">
+			dt
+		</if>
+		as showDate,
+		count(distinct sessionid) as visitor,count(distinct
+		visitorid) as
+		uv,sum(pv) as
+		pv,sum(bounces) as bounces,sum(exits) as
+		exits,sum(viewtime) as
+		viewTime ,
+		sum(entries) as
+		entries,sum(ordercount) as
+		ordercount,sum(orderamount) as
+		orderamount,
+		sum(followingpv) as fpv from
+		page_flow_app where dt between
+		'${startTime}'
+		and '${endTime}' and datasource='${dataSource}'
+		<if test="showHour=='hour'">
+			and "HOUR" &gt;= '${hourFilter}'
+		</if>
+
+
+		<if test="dim !='' and dim !=null ">
+			and ${dim} in
+			<foreach item="item" index="index" collection="urls" open="("
+				separator="," close=")">
+				'${item}'
+			</foreach>
+
+		</if>
+
+		group by
+
+		<if test="showHour=='hour'">
+			"HOUR"
+		</if>
+		<if test="showHour=='day'">
+			dt
+		</if>
+		order by
+		<if test="showHour=='hour'">
+			"HOUR"
+		</if>
+		<if test="showHour=='day'">
+			dt
+		</if>
+		asc
+
+
+	</select>
+
+
+
+
+
+
+</mapper>
+

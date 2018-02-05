@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gome.pathanalyse.dao.IKylinPathAnalyseQueryDao">
+
+	<resultMap type="com.gome.pathanalyse.model.PathAnalyseQueryResult" id="topNResultMap">
+		<result property="code" column="code"/>
+		<result property="pv" column="pv"/>
+	</resultMap>
+
+	<select id="queryTopNEntries" parameterType="com.gome.pathanalyse.model.PathAnalyseQueryParam" resultMap="topNResultMap">
+		select referrer${topNGroupColumn} as code, pv from (
+			select referrer${topNGroupColumn}, sum(pv) as pv from  kylin_report_db.path_analyse
+			where visitday between '${visitStartDay}' and '${visitEndDay}' and datasource='${datasource}' and isEntryPage=0
+			<if test="pageSite != null">
+				and pagesite='${pageSite}'
+			</if>
+			<if test="pageChannel != null">
+				and pagechannel='${pageChannel}'
+			</if> 
+			<if test="pageType != null">
+				and pagetype='${pageType}'
+			</if>
+			<if test="prefixUrl != null">
+				and prefixurl='${prefixUrl}'
+			</if>
+			<if test="channel != null">
+				and channel='${channel}'
+			</if>
+			group by referrer${topNGroupColumn}
+		) where referrer${topNGroupColumn} &lt;&gt; '站外' or referrer${topNGroupColumn} is null
+		order by pv desc
+		limit ${pageSize} offset ${pageStart}
+	</select>
+	
+	<select id="queryTopNFollows" parameterType="com.gome.pathanalyse.model.PathAnalyseQueryParam" resultMap="topNResultMap">
+		select ${topNGroupColumn} as code, pv from (
+			select ${topNGroupColumn}, sum(pv) as pv from  kylin_report_db.path_analyse
+			where visitday between '${visitStartDay}' and '${visitEndDay}' and datasource='${datasource}' and isexitpage=0
+			<if test="pageSite != null">
+				and referrerpagesite='${pageSite}'
+			</if>
+			<if test="pageChannel != null">
+				and referrerpagechannel='${pageChannel}'
+			</if> 
+			<if test="pageType != null">
+				and referrerpagetype='${pageType}'
+			</if>
+			<if test="prefixUrl != null">
+				and referrerprefixurl='${prefixUrl}'
+			</if>
+			<if test="channel != null">
+				and channel='${channel}'
+			</if>
+			group by ${topNGroupColumn}
+		)
+		order by pv desc
+		limit ${pageSize} offset ${pageStart}
+	</select>
+	
+	<resultMap type="com.gome.pathanalyse.model.PathAnalyseQueryResult" id="directEntryOrExitResultMap">
+		<result property="pv" column="pv"/>
+		<result property="uv" column="uv"/>
+		<result property="visits" column="visits"/>
+	</resultMap>
+	
+	<select id="queryDirectEntry" parameterType="com.gome.pathanalyse.model.PathAnalyseQueryParam" resultMap="directEntryOrExitResultMap">
+		select sum(pv) as pv, sum(uv) as uv, sum(visits) as visits from (
+			select visitday, sum(pv) as pv, count(distinct visitorid) as uv, count(distinct sessionid) as visits from  kylin_report_db.path_analyse
+			where visitday &gt;= #{visitStartDay} and visitday &lt;= #{visitEndDay} and datasource=#{datasource} and (isentrypage=1 or (isentrypage=0 and referrer${topNGroupColumn}='站外'))
+			<if test="pageSite != null">
+				and pagesite=#{pageSite}
+			</if>
+			<if test="pageChannel != null">
+				and pagechannel=#{pageChannel}
+			</if> 
+			<if test="pageType != null">
+				and pagetype=#{pageType}
+			</if>
+			<if test="prefixUrl != null">
+				and prefixurl='${prefixUrl}'
+			</if>
+			<if test="channel != null">
+				and channel=#{channel}
+			</if>
+			group by visitday
+		)
+	</select>
+	
+	<select id="queryExit" parameterType="com.gome.pathanalyse.model.PathAnalyseQueryParam" resultMap="directEntryOrExitResultMap">
+		select sum(pv) as pv, sum(uv) as uv, sum(visits) as visits from (
+			select visitday, sum(pv) as pv, count(distinct visitorid) as uv, count(distinct sessionid) as visits from  kylin_report_db.path_analyse
+			where visitday &gt;= #{visitStartDay} and visitday &lt;= #{visitEndDay} and datasource=#{datasource} and isexitpage=1
+			<if test="pageSite != null">
+				and pagesite=#{pageSite}
+			</if>
+			<if test="pageChannel != null">
+				and pagechannel=#{pageChannel}
+			</if> 
+			<if test="pageType != null">
+				and pagetype=#{pageType}
+			</if>
+			<if test="prefixUrl != null">
+				and prefixurl='${prefixUrl}'
+			</if>
+			<if test="channel != null">
+				and channel=#{channel}
+			</if>
+			group by visitday
+		)
+	</select>
+	
+	<resultMap type="com.gome.pathanalyse.model.PathAnalyseQueryResult" id="uvAndVisitsResultMap">
+		<result property="uv" column="uv"/>
+		<result property="visits" column="visits"/>
+	</resultMap>
+	
+	<select id="queryUvVisitsOfEntry" parameterType="com.gome.pathanalyse.model.PathAnalyseQueryParam" resultMap="uvAndVisitsResultMap">
+		select count(distinct visitorid) as uv, count(distinct sessionid) as visits from  kylin_report_db.path_analyse
+		where visitday &gt;= #{visitStartDay} and visitday &lt;= #{visitEndDay} and datasource=#{datasource} and isentrypage=0
+			<if test="topNGroupColumnValue != null">
+			 	and referrer${topNGroupColumn}=#{topNGroupColumnValue}
+			 </if>
+			<if test="topNGroupColumnValue == null">
+				and referrer${topNGroupColumn} is null
+			</if>
+			<if test="pageSite != null">
+				and pagesite=#{pageSite}
+			</if>
+			<if test="pageChannel != null">
+				and pagechannel=#{pageChannel}
+			</if> 
+			<if test="pageType != null">
+				and pagetype=#{pageType}
+			</if>
+			<if test="prefixUrl != null">
+				and prefixurl='${prefixUrl}'
+			</if>
+			<if test="channel != null">
+				and channel=#{channel}
+			</if>		
+	</select>
+	
+	<select id="queryUvVisitsOfFollow"  parameterType="com.gome.pathanalyse.model.PathAnalyseQueryParam" resultMap="uvAndVisitsResultMap">
+		select count(distinct visitorid) as uv, count(distinct sessionid) as visits from  kylin_report_db.path_analyse
+		where visitday &gt;= #{visitStartDay} and visitday &lt;= #{visitEndDay} and datasource=#{datasource} and isexitpage=0
+			<if test="topNGroupColumnValue != null">
+			 	and ${topNGroupColumn}=#{topNGroupColumnValue}
+			 </if>
+			<if test="topNGroupColumnValue == null">
+				and ${topNGroupColumn} is null
+			</if>
+			<if test="pageSite != null">
+				and referrerpagesite=#{pageSite}
+			</if>
+			<if test="pageChannel != null">
+				and referrerpagechannel=#{pageChannel}
+			</if> 
+			<if test="pageType != null">
+				and referrerpagetype=#{pageType}
+			</if>
+			<if test="prefixUrl != null">
+				and referrerprefixurl='${prefixUrl}'
+			</if>
+			<if test="channel != null">
+				and channel=#{channel}
+			</if>			
+	</select>
+	
+	<!-- 查询网站类型的汇总信息 -->
+	<resultMap type="com.gome.dao.model.PageView" id="pageSummaryOfSumItemResultMap">
+		<result property="pv" column="pv"/>
+		<result property="viewTime" column="viewtime"/>
+		<result property="entriesCount" column="entries"/>
+		<result property="exitCount" column="exits"/>
+		<result property="bounce" column="bounces"/>
+	</resultMap>
+	
+	<resultMap type="com.gome.dao.model.PageView" id="pageSummaryOfNotSumItemResultMap">
+		<result property="uv" column="uv"/>
+		<result property="visits" column="visits"/>
+	</resultMap>
+	
+	<select id="querySummaryOfSumItemForPagetype" parameterType="com.gome.pathanalyse.model.PathAnalyseQueryParam" resultMap="pageSummaryOfSumItemResultMap">
+			select
+			sum(pv) as pv,
+			sum(viewTime) as viewtime,
+			sum(entries) as entries,
+			sum(exits) as exits,
+			sum(bounces) as bounces
+			from kylin_report_db.session_hotmap_pathanalyse_for_pagetype
+			where datasource = #{datasource}  and "DAY" &gt;= #{visitStartDay} and "DAY" &lt;= #{visitEndDay}
+			<if test="pageSite != null">
+				and pagesite=#{pageSite}
+			</if>
+			<if test="pageChannel != null">
+				and pagechannel=#{pageChannel}
+			</if> 
+			<if test="pageType != null">
+				and pagetype=#{pageType}
+			</if>
+			<if test="channel != null">
+				and channel=#{channel}
+			</if>
+	</select>
+	
+	<select id="querySummaryOfNotSumItemForPagetype" parameterType="com.gome.pathanalyse.model.PathAnalyseQueryParam" resultMap="pageSummaryOfNotSumItemResultMap">
+			select sum(uv) as uv, sum(visits) as visits
+			from (
+				select
+				COUNT(distinct visitorId) as uv,
+				count(distinct sessionId) as visits
+				from kylin_report_db.session_hotmap_pathanalyse_for_pagetype
+				where datasource = #{datasource}  and "DAY" &gt;= #{visitStartDay} and "DAY" &lt;= #{visitEndDay}
+				<if test="pageSite != null">
+					and pagesite=#{pageSite}
+				</if>
+				<if test="pageChannel != null">
+					and pagechannel=#{pageChannel}
+				</if> 
+				<if test="pageType != null">
+					and pagetype=#{pageType}
+				</if>
+				<if test="channel != null">
+					and channel=#{channel}
+				</if>
+				group by "DAY"
+			)
+	</select>
+	
+	<select id="queryClickOfPagetype"  parameterType="com.gome.pathanalyse.model.PathAnalyseQueryParam" resultType="Long">
+			select
+			sum(pv) as click
+			from kylin_report_db.session_pathanalyse_click
+			where datasource = #{datasource} and "DAY" &gt;= #{visitStartDay} and "DAY" &lt;= #{visitEndDay} and intcmp is not null
+			<if test="pageSite != null">
+				and referrerpagesite=#{pageSite}
+			</if>
+			<if test="pageChannel != null">
+				and referrerpagechannel=#{pageChannel}
+			</if>
+			<if test="pageType != null">
+				and referrerpagetype=#{pageType}
+			</if>
+			<if test="channel != null">
+				and channel=#{channel}
+			</if>
+	</select>
+	
+	<resultMap type="com.gome.dao.model.PageView" id="pageSummaryOfOrderItemResultMap">
+		<result property="participationOrdersCount" column="ordercount"/>
+		<result property="orderTotalAmount" column="orderamount"/>
+	</resultMap>
+	
+	<select id="querySummaryPageOfOrderItem"  parameterType="com.gome.pathanalyse.model.PathAnalyseQueryParam" resultMap="pageSummaryOfOrderItemResultMap">
+			select sum(ordercount) as ordercount, sum(orderamount) as orderamount
+			from kylin_report_db.session_path_analyse_order
+			where datasource = #{datasource} and "DAY" &gt;= #{visitStartDay} and "DAY" &lt;= #{visitEndDay}
+			<if test="pageSite != null">
+				and pagesite=#{pageSite}
+			</if>
+			<if test="pageChannel != null">
+				and pagechannel=#{pageChannel}
+			</if>
+			<if test="pageType != null">
+				and pagetype=#{pageType}
+			</if>
+			<if test="channel != null">
+				and channel=#{channel}
+			</if>
+	</select>
+		
+	<resultMap type="com.gome.dao.model.PageView" id="allStationResultMap">
+		<result property="uv" column="uv"/>
+		<result property="visits" column="visits"/>
+		<result property="pv" column="pv"/>
+		<result property="bounce" column="bounces"/>
+	</resultMap>
+	
+	<select id="queryAllStation" parameterType="com.gome.pathanalyse.model.PathAnalyseQueryParam"  resultMap="allStationResultMap">
+			select sum(uv) as uv, sum(visits) as visits, sum(pv) as pv, sum(bounces) as bounces
+			from(
+				select
+				COUNT(distinct visitorId) as uv,
+				count(distinct sessionId) as visits,
+				sum(pv) as pv,
+				sum(bounces) as bounces
+				from kylin_report_db.session_hotmap_pathanalyse_for_pagetype
+				where datasource = #{datasource}  and "DAY" &gt;= #{visitStartDay} and "DAY" &lt;= #{visitEndDay}
+				<if test="channel != null">
+					and channel=#{channel}
+				</if>
+				group by "DAY"
+			)
+	</select>
+	
+	<select id="queryPvUvVisitsOfPagetype" parameterType="com.gome.pathanalyse.model.PathAnalyseQueryParam"  resultMap="directEntryOrExitResultMap">
+		select sum(pv) as pv, sum(uv) as uv, sum(visits) as visits
+			from (
+				select
+				sum(pv) as pv,
+				COUNT(distinct visitorId) as uv,
+				count(distinct sessionId) as visits
+				from kylin_report_db.session_hotmap_pathanalyse_for_pagetype
+				where datasource = #{datasource}  and "DAY" &gt;= #{visitStartDay} and "DAY" &lt;= #{visitEndDay}
+				<if test="pageSite != null">
+					and pagesite=#{pageSite}
+				</if>
+				<if test="pageChannel != null">
+					and pagechannel=#{pageChannel}
+				</if> 
+				<if test="pageType != null">
+					and pagetype=#{pageType}
+				</if>
+				<if test="channel != null">
+					and channel=#{channel}
+				</if>
+				group by "DAY"
+			)
+	</select>
+	
+	<select id="queryPvUvVisitsOfReferrerPagetype" parameterType="com.gome.pathanalyse.model.PathAnalyseQueryParam"  resultMap="directEntryOrExitResultMap">
+		select sum(pv) as pv, sum(uv) as uv, sum(visits) as visits
+			from (
+				select
+				sum(pv) as pv,
+				COUNT(distinct visitorId) as uv,
+				count(distinct sessionId) as visits
+				from kylin_report_db.session_hotmap_pathanalyse_for_pagetype
+				where datasource = #{datasource}  and "DAY" &gt;= #{visitStartDay} and "DAY" &lt;= #{visitEndDay}
+				<if test="pageSite != null">
+					and referrerpagesite=#{pageSite}
+				</if>
+				<if test="pageChannel != null">
+					and referrerpagechannel=#{pageChannel}
+				</if> 
+				<if test="pageType != null">
+					and referrerpagetype=#{pageType}
+				</if>
+				<if test="channel != null">
+					and channel=#{channel}
+				</if>
+				group by "DAY"
+			)
+	</select>
+</mapper>

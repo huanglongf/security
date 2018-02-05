@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gome.dao.IKylinAppHotMapDao">
+	<resultMap type="com.gome.dao.model.PageView" id="allStationResultMap">
+		<result property="uv" column="uv"/>
+		<result property="visits" column="visits"/>
+		<result property="pv" column="pv"/>
+	</resultMap>
+	
+	<resultMap type="com.gome.dao.model.PageView" id="summaryResultMap">
+		<result property="uv" column="uv"/>
+		<result property="visits" column="visits"/>
+		<result property="pv" column="pv"/>
+		<result property="viewTime" column="viewtime"/>
+	</resultMap>
+	
+	<select id="queryAllStation" parameterType="com.gome.Controller.model.AppHotMapQueryParam"  resultMap="allStationResultMap">
+			select 
+			sum(pv) as pv, 
+			sum(uv) as uv, 
+			sum(visits) as visits
+			from(
+			    select visitday,sum(pv) as pv, count (distinct visitorid) as uv, 
+			    count(distinct sessionid) as visits
+			    from kylin_report_db.session_hotmap_app
+			    where visitday &gt;= '${startTime}' and visitday &lt;= '${endTime}'
+			    group by visitday
+			)
+	</select>
+	
+	<select id="querySummaryOfSy" parameterType="com.gome.Controller.model.AppHotMapQueryParam"  resultMap="summaryResultMap">
+			select sum(pv) as pv,
+			sum(uv) as uv,
+			sum(visits) as visits,
+			sum(viewtime) as viewtime
+			from (
+			    select 
+			    visitday,
+			    sum(pv) as pv, 
+			    count (distinct visitorid) as uv, 
+			    count(distinct sessionid) as visits,
+			    sum(viewtime) as viewtime
+			    from kylin_report_db.session_hotmap_app
+			    where visitday &gt;= '${startTime}' and visitday &lt;= '${endTime}'
+			    and pagetitle='首页'
+			    group by visitday
+			)
+	</select>
+	
+	<select id="queryClickForSy"  parameterType="com.gome.Controller.model.AppHotMapQueryParam"  resultType="Long">
+		select sum(pv) as click
+		from kylin_report_db.session_hotmap_app
+		where visitday &gt;= #{startTime} and visitday &lt;= #{endTime}
+		and intcmppage='sy'
+	</select>
+	
+	<resultMap type="com.gome.dao.model.PageResource" id="resourcesResultMap">
+		<result property="code" column="intcmp"/>
+		<result property="click" column="click"/>
+		<result property="pv" column="followingPv"/>
+		<result property="vistor" column="visits"/>
+		<result property="uv" column="uv"/>
+	</resultMap>
+	
+	<select id="queryResourcesOfSy"  parameterType="com.gome.Controller.model.AppHotMapQueryParam"  resultMap="resourcesResultMap">
+		select 
+		intcmp,
+		sum(pv) as click, 
+		count (distinct visitorid) as uv, 
+		count(distinct sessionid) as visits,
+		sum(followingpv) as followingpv
+		from kylin_report_db.session_hotmap_app
+		where visitday &gt;= #{startTime} and visitday &lt;= #{endTime}
+		and intcmppage='sy'
+		group by intcmp
+	</select>
+	
+	<resultMap type="com.gome.dao.model.PageResource" id="intcmpTotalResultMap">
+		<result property="click" column="click"/>
+		<result property="pv" column="followingPv"/>
+		<result property="vistor" column="visits"/>
+		<result property="uv" column="uv"/>
+	</resultMap>
+	
+	<resultMap type="com.gome.dao.model.PageResource" id="intcmpHistoryResultMap">
+		<result property="url" column="url"/>
+		<result property="title" column="pagetitle"/>
+		<result property="click" column="click"/>
+		<result property="pv" column="followingPv"/>
+		<result property="vistor" column="visits"/>
+		<result property="uv" column="uv"/>
+	</resultMap>
+	
+	<select id="queryTotalItemOfIntcmp" parameterType="com.gome.Controller.model.AppHotMapQueryParam"  resultMap="intcmpTotalResultMap">
+		select sum(click) as click,
+		sum(uv) as uv,
+		sum(visits) as visits,
+		sum(followingpv) as followingpv
+		from(
+		    select 
+		    sum(pv) as click, 
+		    count (distinct visitorid) as uv, 
+		    count(distinct sessionid) as visits,
+		    sum(followingpv) as followingpv
+		    from kylin_report_db.session_hotmap_app
+			where visitday &gt;= '${startTime}' and visitday &lt;= '${endTime}'
+		    and intcmp='${intcmp}'
+		)
+	</select>
+	
+	<select id="queryHistoryOfIntcmp"  parameterType="com.gome.Controller.model.AppHotMapQueryParam"  resultMap="intcmpHistoryResultMap">
+		select url,
+		pagetitle,
+		sum(click) as click,
+		sum(uv) as uv,
+		sum(visits) as visits,
+		sum(followingpv) as followingpv
+		from(
+            select 
+            visitday,
+            url,
+            pagetitle,
+            sum(pv) as click, 
+            count (distinct visitorid) as uv, 
+            count(distinct sessionid) as visits,
+            sum(followingpv) as followingpv
+            from kylin_report_db.session_hotmap_app
+			where visitday &gt;= '${startTime}' and visitday &lt;= '${endTime}'
+		    and intcmp='${intcmp}'
+            group by url,pagetitle,visitday
+        )group by url, pagetitle
+	</select>
+	
+	<resultMap type="com.gome.dao.model.PageView" id="itemForTimeResultMap">
+		<result property="code" column="code"/>
+		<result property="pv" column="pv"/>
+		<result property="visits" column="visits"/>
+		<result property="uv" column="uv"/>
+		<result property="viewTime" column="viewtime"/>
+	</resultMap>
+	
+	<resultMap type="com.gome.dao.model.PageView" id="clickForTimeResultMap">
+		<result property="code" column="code"/>
+		<result property="click" column="click"/>
+	</resultMap>
+	
+	<select id="querySyFullItemOfHour" parameterType="com.gome.Controller.model.AppHotMapQueryParam" resultMap="itemForTimeResultMap">
+		select 
+		"HOUR" as code,
+		sum(pv) as pv, 
+		count (distinct visitorid) as uv, 
+		count(distinct sessionid) as visits,
+		sum(viewtime) as viewtime
+		from kylin_report_db.session_hotmap_app
+		where visitday &gt;= #{startTime} and visitday &lt;= #{endTime}
+		and pagetitle='首页'
+		group by "HOUR"
+	</select>
+	
+	<select id="querySyClickOfHour"  parameterType="com.gome.Controller.model.AppHotMapQueryParam" resultMap="clickForTimeResultMap">
+		select 
+		"HOUR" as code,
+		sum(pv) as click
+		from kylin_report_db.session_hotmap_app
+		where visitday &gt;= #{startTime} and visitday &lt;= #{endTime}
+		and intcmppage='sy'
+		group by "HOUR"
+	</select>
+	
+	<select id="querySyFullItemOfDay" parameterType="com.gome.Controller.model.AppHotMapQueryParam" resultMap="itemForTimeResultMap">
+		select 
+		visitday as code,
+		sum(pv) as pv, 
+		count (distinct visitorid) as uv, 
+		count(distinct sessionid) as visits,
+		sum(viewtime) as viewtime
+		from kylin_report_db.session_hotmap_app
+		where visitday &gt;= #{startTime} and visitday &lt;= #{endTime}
+		and pagetitle='首页'
+		group by visitday
+	</select>
+	
+	<select id="querySyClickOfDay"  parameterType="com.gome.Controller.model.AppHotMapQueryParam" resultMap="clickForTimeResultMap">
+		select 
+		visitday as code,
+		sum(pv) as click
+		from kylin_report_db.session_hotmap_app
+		where visitday &gt;= #{startTime} and visitday &lt;= #{endTime}
+		and intcmppage='sy'
+		group by visitday
+	</select>
+</mapper>

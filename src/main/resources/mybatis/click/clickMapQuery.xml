@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.gome.clickmap.dao.ClickMapDao">
+
+	<resultMap type="com.gome.clickmap.model.ClickMapModel" id="clickMapbeans">
+
+		<result property="x" column="x" />
+		<result property="y" column="y" />
+		<result property="clickCount" column="clickCount" />
+
+	</resultMap>
+
+	<select id="queryByUrl" resultMap="clickMapbeans">
+	select x,y,	clickCount from (select x,y, sum(clickCount) as 
+		clickCount from page_click where x &gt;0 and
+		x &lt; 100000
+
+		and prefixurl='${pageUrl}' and visitdate &gt;= '${startTime}' and visitdate
+		&lt;='${endTime}'
+
+		group by x,y ) where  clickCount &gt;${min}
+		
+	</select>
+
+	<select id="queryMaxClick" resultType="java.lang.Double">
+
+		select max(clickCount) as
+		clickCount from (select x,y, sum(clickCount) as
+		clickCount from page_click
+		where x &gt;5 and x &lt; 100000
+		and prefixurl='${pageUrl}' and visitdate &gt;= '${startTime}' and visitdate
+		&lt;='${endTime}'
+
+
+		group by x,y) 
+
+	</select>
+
+	<select id="queryCount" resultType="java.lang.Double">
+
+		select count(*) as totalCount from (select x,y, sum(clickCount) as clickCount
+		from page_click where x &gt; 5 and x &lt; 100000
+
+		<if test="_parameter!=null and _parameter!='' ">
+
+			and
+
+			prefixurl='${_parameter}' and visitdate &gt;= '#{startTime}' and
+			visitdate &lt;= '#{endTime}'
+		</if>
+
+		group by x,y)
+
+	</select>
+
+</mapper>

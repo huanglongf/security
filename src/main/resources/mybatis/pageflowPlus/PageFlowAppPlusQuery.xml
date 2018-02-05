@@ -1,0 +1,601 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.gome.pageflowplus.dao.PageFlowAppPlusDao">
+
+
+
+
+
+	<resultMap type="com.gome.pageflow.model.PageFlow" id="pageflowTopN">
+
+		<result property="pageContent" column="pageContent" />
+		<result property="visitor" column="visitor" />
+		<result property="uv" column="uv" />
+		<result property="pv" column="pv" />
+		<result property="viewTime" column="viewTime" />
+		<result property="entries" column="entries" />
+		<result property="fpv" column="fpv" />
+		<result property="takeOrdercount" column="ordercount" />
+		<result property="bounces" column="bounces" />
+		<result property="exits" column="exits" />
+		<result property="takeOrderAmount" column="orderamount" />
+	</resultMap>
+
+	<resultMap type="com.gome.pageflow.model.PageFlow" id="pageflowAllstation">
+		<result property="visitor" column="visitor" />
+		<result property="uv" column="uv" />
+		<result property="pv" column="pv" />
+		<result property="viewTime" column="viewTime" />
+		<result property="entries" column="entries" />
+		<result property="fpv" column="fpv" />
+		<result property="takeOrdercount" column="ordercount" />
+		<result property="bounces" column="bounces" />
+		<result property="exits" column="exits" />
+		<result property="takeOrderAmount" column="orderamount" />
+	</resultMap>
+
+
+	<resultMap type="com.gome.pageflow.model.PageFlow" id="pageflowchart">
+		<result property="date" column="showDate" />
+		<result property="pageContent" column="pageContent" />
+		<result property="visitor" column="visitor" />
+		<result property="uv" column="uv" />
+		<result property="pv" column="pv" />
+		<result property="viewTime" column="viewTime" />
+		<result property="entries" column="entries" />
+		<result property="fpv" column="fpv" />
+		<result property="takeOrdercount" column="ordercount" />
+		<result property="bounces" column="bounces" />
+		<result property="exits" column="exits" />
+		<result property="takeOrderAmount" column="orderamount" />
+	</resultMap>
+
+	<resultMap type="com.gome.pageflow.model.PageFlow" id="pageflowAllStartChart">
+		<result property="date" column="showDate" />
+		<result property="visitor" column="visitor" />
+		<result property="uv" column="uv" />
+		<result property="pv" column="pv" />
+		<result property="viewTime" column="viewTime" />
+		<result property="entries" column="entries" />
+		<result property="fpv" column="fpv" />
+		<result property="takeOrdercount" column="ordercount" />
+		<result property="bounces" column="bounces" />
+		<result property="exits" column="exits" />
+		<result property="takeOrderAmount" column="orderamount" />
+	</resultMap>
+
+
+
+	<resultMap type="com.gome.pageflow.model.PageFlow" id="pageflowclick">
+
+		<result property="pageContent" column="pageContent" />
+		<result property="date" column="showDate" />
+		<result property="click" column="click" />
+
+	</resultMap>
+
+
+
+
+	<!-- Pv topN -->
+	<select id="queryPvTopN" resultType="java.lang.String">
+
+		select t.${dim} from (select
+		${dim} ,sum(pv) as
+		pv from hotmap_flow_page_dt
+		where dt between
+		'${startTime}' and '${endTime}' and
+		datasource='${dataSource}'
+		group by ${dim} order by pv
+		desc limit 1000
+		offset 0) t
+
+		<if test="dim =='pagetype'">
+			where t.pagetype &lt;&gt;''
+		</if>
+
+		limit 1000 offset 0
+		<!-- limit ${pageSize} offset ${pageStart} -->
+	</select>
+
+	<!-- topN汇总数 -->
+	<select id="querytotalCountTopN" resultType="java.lang.Long">
+
+		select count(*) from
+		( select ${dim} ,sum(pv) as
+		pv from hotmap_flow_page_dt
+		where dt
+		between
+		'${startTime}' and '${endTime}' and
+		datasource='${dataSource}'
+		group by
+		${dim} order by pv desc limit 1000
+		offset 0 ) t
+
+		<if test="dim =='pagetype'">
+			where t.pagetype &lt;&gt;''
+		</if>
+	</select>
+
+	<!-- 查询全站的信息 -->
+	<select id="queryAllStation" resultMap="pageflowAllstation">
+
+		select sum(visitor) as
+		visitor,sum(uv) as uv,sum(pv) as
+		pv,sum(bounces) as
+		bounces,sum(exits)
+		as exits,sum(viewtime) as
+		viewTime ,sum(entries) as
+		entries,sum(ordercount) as
+		ordercount,sum(orderamount) as
+		orderamount,
+		sum(followingpv) as fpv from hotmap_flow_page_dt
+		where dt between
+		'${startTime}'
+		and '${endTime}' and
+		datasource='${dataSource}'
+
+	</select>
+
+	<!-- 查询全站的信息 -->
+	<select id="queryAllStationGroup" resultMap="pageflowAllStartChart">
+
+		select
+		<if test="showHour=='hour'">
+			(CASE	WHEN length(`HOUR`) = 2 THEN CONCAT(DATE_FORMAT(dt, '%Y-%m-%d')," ",`HOUR`)	ELSE CONCAT(DATE_FORMAT(dt, '%Y-%m-%d')," 0",`HOUR`)	END)
+		</if>
+		<if test="showHour=='day'">
+			dt
+		</if>
+		as showDate,
+		sum(visitor) as visitor,sum(uv) as uv,sum(pv) as
+		pv,sum(bounces) as bounces,sum(exits) as
+		exits,sum(viewtime) as
+		viewTime ,
+		sum(entries) as
+		entries,sum(ordercount) as
+		ordercount,sum(orderamount) as
+		orderamount,
+		sum(followingpv) as fpv from
+		<if test="showHour=='hour'">
+			hotmap_flow_page_hour
+		</if>
+		<if test="showHour=='day'">
+			hotmap_flow_page_dt
+		</if>
+		where dt between '${startTime}'
+		and '${endTime}' and
+		datasource='${dataSource}'
+		<if test="showHour=='hour'">
+			and (CASE	WHEN length(`HOUR`) = 2 THEN CONCAT(DATE_FORMAT(dt, '%Y-%m-%d')," ",`HOUR`)	ELSE CONCAT(DATE_FORMAT(dt, '%Y-%m-%d')," 0",`HOUR`)	END) &gt;= '${hourFilter}'
+			group by (CASE	WHEN length(`HOUR`) = 2 THEN CONCAT(DATE_FORMAT(dt, '%Y-%m-%d')," ",`HOUR`)	ELSE CONCAT(DATE_FORMAT(dt, '%Y-%m-%d')," 0",`HOUR`)	END)
+		</if>
+		<if test="showHour=='day'">
+
+			group by dt
+		</if>
+
+	</select>
+
+
+
+	<!-- 根据TopN查询所有的信息 -->
+	<select id="queryAllTopN" resultMap="pageflowTopN">
+
+		select 
+		<if test="dim !='' and dim !=null ">
+			${dim}
+		</if>
+
+		<if test="dim =='' or dim =null ">
+			prefixurl
+		</if>
+		as pageContent, 
+		sum(visitor) as visitor,sum(uv) as
+		uv,sum(pv) as
+		pv,sum(bounces) as bounces,sum(exits) as
+		exits,sum(viewtime) as
+		viewTime ,sum(entries) as
+		entries,sum(ordercount) as
+		ordercount,sum(orderamount) as
+		orderamount,sum(followingpv) as fpv from 
+		hotmap_flow_page_dt 
+		where dt
+		between
+		'${startTime}' and '${endTime}' and
+		datasource='${dataSource}'
+		<if test="dim !='' and dim !=null ">
+			and ${dim} in
+			<foreach item="item" index="index" collection="urls" open="("
+				separator="," close=")">
+				'${item}'
+			</foreach>
+
+		</if>
+		group by 
+		<if test="dim !='' and dim !=null ">
+			${dim}
+		</if>
+		<if test="dim =='' or dim =null ">
+			prefixurl
+		</if>
+
+		<if test="orderField !=null and orderField !='' and orderField !='null' ">
+			order by ${orderField} desc
+		</if>
+		limit ${pageSize} offset ${pageStart}
+
+	</select>
+
+
+	<select id="queryPage" resultMap="pageflowchart">
+
+		select
+
+		<if test="dim !=null and dim !=''">
+			${dim} as pageContent,
+		</if>
+
+		<if test="showHour=='hour'">
+			(CASE	WHEN length(`HOUR`) = 2 THEN CONCAT(DATE_FORMAT(dt, '%Y-%m-%d')," ",`HOUR`)	ELSE CONCAT(DATE_FORMAT(dt, '%Y-%m-%d')," 0",`HOUR`)	END) as showDate,
+		</if>
+		<if test="showHour=='day'">
+			dt as showDate,
+		</if>
+		sum(visitor) as visitor,sum(uv) as
+		uv,sum(pv) as pv,sum(bounces) as bounces,sum(exits) as
+		exits,sum(viewtime) as viewTime ,sum(entries) as
+		entries,sum(ordercount) as ordercount,sum(orderamount) as
+		orderamount,sum(followingpv) as fpv from 
+		<if test="showHour=='hour'">
+			hotmap_flow_page_hour
+		</if>
+
+		<if test="showHour=='day'">
+			hotmap_flow_page_dt
+		</if>
+		where dt
+		between
+		'${startTime}'
+		and '${endTime}' and datasource='${dataSource}'
+		<if test="showHour=='hour'">
+			and (CASE	WHEN length(`HOUR`) = 2 THEN CONCAT(DATE_FORMAT(dt, '%Y-%m-%d')," ",`HOUR`)	ELSE CONCAT(DATE_FORMAT(dt, '%Y-%m-%d')," 0",`HOUR`)	END) &gt;= '${hourFilter}'
+		</if>
+
+		and ${dim} in
+
+		<foreach item="item" index="index" collection="urls" open="("
+			separator="," close=")">
+			'${item}'
+		</foreach>
+
+		group by
+		<if test="showHour=='hour'">
+			(CASE	WHEN length(`HOUR`) = 2 THEN CONCAT(DATE_FORMAT(dt, '%Y-%m-%d')," ",`HOUR`)	ELSE CONCAT(DATE_FORMAT(dt, '%Y-%m-%d')," 0",`HOUR`)	END)
+		</if>
+
+		<if test="showHour=='day'">
+			dt
+		</if>
+		<if test="dim !=null and dim !=''">
+			,${dim}
+		</if>
+
+		order by
+		<if test="dim !=null and dim !=''">
+			${dim},
+		</if>
+		<if test="showHour=='hour'">
+			`HOUR`
+		</if>
+
+		<if test="showHour=='day'">
+			dt
+		</if>
+
+		asc
+
+
+	</select>
+
+	<select id="queryTopnClick" resultMap="pageflowclick">
+		select referrerprefixurl
+		as pageContent, sum(click) as click,'' as
+		showDate from 
+		<if test="dataSource=='PLUS-WAP'">
+			rpt_hotMap_plus_wap_base_pv
+		</if>
+		<if test="dataSource=='PLUS-LOG'">
+			rpt_hotMap_plus_app_base_pv
+		</if>
+		where `date` between '${startTime}' and
+		'${endTime}'
+		and intcmp is not null
+		and
+		intcmp &lt;&gt; ''
+		and referrerprefixurl in
+		<foreach item="item" index="index" collection="urls" open="("
+			separator="," close=")">
+			'${item}'
+		</foreach>
+		group by referrerprefixurl
+	</select>
+
+	<select id="queryPageChartClick" resultMap="pageflowclick">
+
+		select
+		<if test="showHour=='hour'">
+			(CASE	WHEN length(`visit_hour`) = 2 THEN CONCAT(DATE_FORMAT(`date`, '%Y-%m-%d')," ",`visit_hour`)	ELSE CONCAT(DATE_FORMAT(`date`, '%Y-%m-%d')," 0",`visit_hour`)	END) as showDate,
+		</if>
+
+		<if test="showHour=='day'">
+			`date` as showDate,
+		</if>
+
+
+		<if test="dim !='' and dim !=null">
+			referrerprefixurl as pageContent,
+		</if>
+
+		sum(click) as click 
+		from 
+		<if test="showHour=='hour'">
+			<if test="dataSource=='PLUS-WAP'">
+				rpt_hotMap_plus_wap_base_pv_hour
+			</if>
+			<if test="dataSource=='PLUS-LOG'">
+				rpt_hotMap_plus_app_base_pv_hour
+			</if>
+		</if>
+
+		<if test="showHour=='day'">
+			<if test="dataSource=='PLUS-WAP'">
+				rpt_hotMap_plus_wap_base_pv
+			</if>
+			<if test="dataSource=='PLUS-LOG'">
+				rpt_hotMap_plus_app_base_pv
+			</if>
+		</if>
+		where
+		`date` between
+		'${startTime}'
+		and '${endTime}' 
+		and
+		intcmp is not null
+
+		<if test="showHour=='hour'">
+			and (CASE	WHEN length(`visit_hour`) = 2 THEN CONCAT(DATE_FORMAT(`date`, '%Y-%m-%d')," ",`visit_hour`)	ELSE CONCAT(DATE_FORMAT(`date`, '%Y-%m-%d')," 0",`visit_hour`)	END) &gt;= '${hourFilter}'
+		</if>
+
+		and intcmp &lt;&gt;
+		'' and referrerprefixurl in
+		<foreach item="item" index="index" collection="urls" open="("
+			separator="," close=")">
+			'${item}'
+		</foreach>
+
+		group by
+		<if test="showHour=='hour'">
+			(CASE	WHEN length(`visit_hour`) = 2 THEN CONCAT(DATE_FORMAT(`date`, '%Y-%m-%d')," ",`visit_hour`)	ELSE CONCAT(DATE_FORMAT(`date`, '%Y-%m-%d')," 0",`visit_hour`)	END)
+		</if>
+		<if test="showHour=='day'">
+			dt
+		</if>
+		<if test="dim !='' and dim !=null">
+			,referrerprefixurl
+		</if>
+
+		order by
+		<if test="dim !='' and dim !=null">
+			referrerprefixurl ,
+		</if>
+
+		<if test="showHour=='hour'">
+			visit_hour
+		</if>
+		<if test="showHour=='day'">
+			`date`
+		</if>
+		asc
+
+
+	</select>
+
+	<select id="querySearchCount" resultType="java.lang.Long">
+		select count(*) from ( select count(1) from
+		hotmap_flow_page_dt where dt
+		between
+		'${startTime}' and
+		'${endTime}' and
+		datasource='${dataSource}'
+		<if test="dim !='' and dim !=null ">
+			and ${dim} in
+			<foreach item="item" index="index" collection="urls" open="("
+				separator="," close=")">
+				'${item}'
+			</foreach>
+
+		</if>
+		group by ${dim}
+		) t
+	</select>
+
+	<select id="querySearchPageTotal" resultMap="pageflowAllstation">
+		select
+		sum(visitor) as visitor,sum(uv) as
+		uv,sum(pv) as
+		pv,sum(bounces)
+		as bounces,sum(exits) as
+		exits,sum(viewtime) as
+		viewTime ,
+		sum(entries)
+		as
+		entries,sum(ordercount) as
+		ordercount,sum(orderamount) as
+		orderamount,
+		sum(followingpv) as fpv from 
+		hotmap_flow_page_dt
+		where dt between
+		'${startTime}'
+		and '${endTime}' and datasource='${dataSource}'
+		<if test="dim !='' and dim !=null ">
+			and ${dim} in
+			<foreach item="item" index="index" collection="urls" open="("
+				separator="," close=")">
+				'${item}'
+			</foreach>
+
+		</if>
+	</select>
+
+	<select id="querySearchPageChart" resultMap="pageflowAllStartChart">
+		select
+		<if test="showHour=='hour'">
+			(CASE	WHEN length(`HOUR`) = 2 THEN CONCAT(DATE_FORMAT(dt, '%Y-%m-%d')," ",`HOUR`)	ELSE CONCAT(DATE_FORMAT(dt, '%Y-%m-%d')," 0",`HOUR`)	END)
+		</if>
+		<if test="showHour=='day'">
+			dt
+		</if>
+		as showDate,
+		sum(visitor) as visitor,sum(uv) as
+		uv,sum(pv) as
+		pv,sum(bounces) as bounces,sum(exits) as
+		exits,sum(viewtime) as
+		viewTime ,
+		sum(entries) as
+		entries,sum(ordercount) as
+		ordercount,sum(orderamount) as
+		orderamount,
+		sum(followingpv) as fpv from
+		<if test="showHour=='hour'">
+			hotmap_flow_page_hour
+		</if>
+		<if test="showHour=='day'">
+			hotmap_flow_page_dt
+		</if>
+		where dt between
+		'${startTime}'
+		and '${endTime}' and datasource='${dataSource}'
+		<if test="showHour=='hour'">
+			and (CASE	WHEN length(`HOUR`) = 2 THEN CONCAT(DATE_FORMAT(dt, '%Y-%m-%d')," ",`HOUR`)	ELSE CONCAT(DATE_FORMAT(dt, '%Y-%m-%d')," 0",`HOUR`)	END) &gt;= '${hourFilter}'
+		</if>
+
+
+		<if test="dim !='' and dim !=null ">
+			and ${dim} in
+			<foreach item="item" index="index" collection="urls" open="("
+				separator="," close=")">
+				'${item}'
+			</foreach>
+
+		</if>
+		group by
+		<if test="showHour=='hour'">
+			(CASE	WHEN length(`HOUR`) = 2 THEN CONCAT(DATE_FORMAT(dt, '%Y-%m-%d')," ",`HOUR`)	ELSE CONCAT(DATE_FORMAT(dt, '%Y-%m-%d')," 0",`HOUR`)	END)
+		</if>
+		<if test="showHour=='day'">
+			dt
+		</if>
+		order by
+		<if test="showHour=='hour'">
+			`HOUR`
+		</if>
+		<if test="showHour=='day'">
+			dt
+		</if>
+		asc
+
+
+	</select>
+
+	<select id="querySearchClickGroup" resultMap="pageflowclick">
+
+		select '' as pageContent,
+		<if test="showHour=='hour'">
+			(CASE	WHEN length(`visit_hour`) = 2 THEN CONCAT(DATE_FORMAT(`date`, '%Y-%m-%d')," ",`visit_hour`)	ELSE CONCAT(DATE_FORMAT(`date`, '%Y-%m-%d')," 0",`visit_hour`)	END) as showDate,
+		</if>
+		<if test="showHour=='day'">
+			`date` as showDate,
+		</if>
+		sum(click) as click from 
+		<if test="showHour=='hour'">
+			<if test="dataSource=='PLUS-WAP'">
+				rpt_hotMap_plus_wap_base_pv_hour
+			</if>
+			<if test="dataSource=='PLUS-LOG'">
+				rpt_hotMap_plus_app_base_pv_hour
+			</if>
+		</if>
+
+		<if test="showHour=='day'">
+			<if test="dataSource=='PLUS-WAP'">
+				rpt_hotMap_plus_wap_base_pv
+			</if>
+			<if test="dataSource=='PLUS-LOG'">
+				rpt_hotMap_plus_app_base_pv
+			</if>
+		</if>
+		where
+		`date` between
+		'${startTime}'
+		and '${endTime}' 
+		and
+		intcmp is not null
+		and intcmp &lt;&gt;''
+
+		<if test="showHour=='hour'">
+			and (CASE	WHEN length(`visit_hour`) = 2 THEN CONCAT(DATE_FORMAT(`date`, '%Y-%m-%d')," ",`visit_hour`)	ELSE CONCAT(DATE_FORMAT(`date`, '%Y-%m-%d')," 0",`visit_hour`)	END) &gt;= '${hourFilter}'
+		</if>
+
+		and referrerprefixurl in
+		<foreach item="item" index="index" collection="urls" open="("
+			separator="," close=")">
+			'${item}'
+		</foreach>
+		group by
+		<if test="showHour=='hour'">
+			`visit_hour`
+		</if>
+		<if test="showHour=='day'">
+			`date`
+		</if>
+		order by
+		<if test="showHour=='hour'">
+			`visit_hour`
+		</if>
+
+		<if test="showHour=='day'">
+			`date`
+		</if>
+
+		asc
+
+	</select>
+
+	<select id="querySearchPageTotalClick" resultType="java.lang.Long">
+
+		select sum(click) as click from 
+		<if test="dataSource=='PLUS-WAP'">
+				rpt_hotMap_plus_wap_base_pv
+			</if>
+			<if test="dataSource=='PLUS-LOG'">
+				rpt_hotMap_plus_app_base_pv
+			</if>
+		where
+		`date` between
+		'${startTime}' and '${endTime}' 
+		and
+		intcmp is not null and intcmp &lt;&gt;
+		'' and referrerprefixurl in
+		<foreach item="item" index="index" collection="urls" open="("
+			separator="," close=")">
+			'${item}'
+		</foreach>
+
+	</select>
+
+
+
+</mapper>
+

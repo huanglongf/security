@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: redis.gcache:gcache:3.0.0-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://C:/Users/zhangyuan-ds1/.m2/repository/redis/gcache/gcache/3.0.0-SNAPSHOT/gcache-3.0.0-20170825.104534-68.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://C:/Users/zhangyuan-ds1/.m2/repository/redis/gcache/gcache/3.0.0-SNAPSHOT/gcache-3.0.0-20170825.104534-68-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://C:/Users/zhangyuan-ds1/.m2/repository/redis/gcache/gcache/3.0.0-SNAPSHOT/gcache-3.0.0-20170825.104534-68-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

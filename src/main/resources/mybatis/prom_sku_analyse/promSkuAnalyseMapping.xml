@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gome.promsku.dao.IPromSkuAnalyseDao">
+
+	<resultMap type="com.gome.promsku.dao.model.PromSkuAnalyseDaoResult" id="promSkuBaseInfoResultMap">
+		<result property="skuId" column="sku_id"/>
+		<result property="skuName" column="sku_name"/>
+		<result property="catdName1" column="catdname1"/>
+		<result property="catdName2" column="catdname2"/>
+		<result property="catdName3" column="catdname3"/>
+		<result property="brandName" column="brandname"/>
+		<result property="skuStartDate" column="sku_start_date"/>
+		<result property="skuEndDate" column="sku_end_date"/>
+		<result property="skuUrl" column="sku_url"/>
+	</resultMap>
+	
+	<resultMap type="com.gome.promsku.dao.model.PromSkuAnalyseDaoResult" id="promSkuSessionInfoResultMap">	
+		<result property="skuUv" column="sku_uv"/>
+		<result property="skuClick" column="sku_click"/>
+	</resultMap>
+	
+	<resultMap type="com.gome.promsku.dao.model.PromSkuAnalyseDaoResult" id="allStationSkuInfoResultMap">
+		<result property="skuId" column="sku_id"/>
+		<result property="orderCount" column="order_count"/>
+		<result property="orderAmount" column="order_amount"/>
+		<result property="orderQuantity" column="order_quantity"/>
+		<result property="skuAllPv" column="sku_all_pv"/>
+		<result property="skuAllUv" column="sku_all_uv"/>
+	</resultMap>
+	
+	<resultMap type="com.gome.promsku.dao.model.PromSkuAnalyseDaoResult" id="promInfoResultMap">
+		<result property="pageTitle" column="page_title"/>
+		<result property="pageStartDate" column="page_start_date"/>
+	</resultMap>
+	
+	<resultMap type="com.gome.promsku.dao.model.PromSkuAnalyseDaoResult" id="promSkuDateResultMap">
+		<result property="skuId" column="sku_id"/>
+		<result property="skuStartDate" column="sku_start_date"/>
+		<result property="skuEndDate" column="sku_end_date"/>
+	</resultMap>
+	
+	<resultMap type="com.gome.promsku.model.PromSkuAnalyseCityAvailableselling" id="availablesellingResultMap">
+		<result property="daid" column="daid"/>
+		<result property="selling" column="availableselling"/>
+	</resultMap>
+	
+	<resultMap type="com.gome.promsku.dao.model.PromSkuAnalyseDaoResult" id="promSkuOrderCountResultMap">
+		<result property="orderCount" column="order_count"/>
+	</resultMap>
+	
+	<resultMap type="com.gome.promsku.dao.model.PromSkuAnalyseDaoResult" id="promSkuOrderAmountQuantityResultMap">
+		<result property="orderAmount" column="order_amount"/>
+		<result property="orderQuantity" column="order_quantity"/>
+	</resultMap>
+	
+	<resultMap type="com.gome.promsku.model.PromSkuAnalyseCityInfo" id="promSkuCityOrderCountResultMap">
+		<result property="cityName" column="city_name"/>
+		<result property="orderCount" column="order_count"/>
+	</resultMap>
+	
+	<resultMap type="com.gome.promsku.model.PromSkuAnalyseCityInfo" id="promSkuCityOrderQuantityResultMap">
+		<result property="cityName" column="city_name"/>
+		<result property="orderQuantity" column="order_quantity"/>
+	</resultMap>
+	
+	<resultMap type="com.gome.promsku.model.PromSkuAnalyseCityInfo" id="promSkuCityPvResultMap">
+		<result property="cityName" column="city_name"/>
+		<result property="pv" column="pv"/>
+	</resultMap>
+	
+	<resultMap type="com.gome.promsku.dao.model.PromSkuAnalyseDaoResult" id="promSkuModelidProductIdResultMap">
+		<result property="intcmpModeId" column="intcmpModeId"/>
+		<result property="productId" column="productid"/>
+	</resultMap>
+	
+	<resultMap type="com.gome.promsku.dao.model.PromSkuAnalyseDaoResult" id="promSkuOrderCountBatchResultMap">
+		<result property="skuId" column="skuid"/>
+		<result property="orderCount" column="order_count"/>
+	</resultMap>
+	
+	<resultMap type="com.gome.promsku.dao.model.PromSkuAnalyseDaoResult" id="promSkuOrderAmountQuantityBatchResultMap">
+		<result property="skuId" column="skuid"/>
+		<result property="orderAmount" column="order_amount"/>
+		<result property="orderQuantity" column="order_quantity"/>
+	</resultMap>
+	
+	<select id="queryPromSkuBaseInfo" parameterType="com.gome.promsku.model.PromSkuAnalyseQueryParam" resultMap="promSkuBaseInfoResultMap">
+		select sku_id, sku_name, catdname1, catdname2, catdname3, brandname, sku_start_date, sku_end_date, sku_url
+		from(
+			select sku_id, sku_name, catdname1, catdname2, catdname3, brandname, sku_start_date, max(sku_end_date) as sku_end_date, max(sku_url) as sku_url
+			from kylin_report_db.session_prom_sku_combine where prom_url= #{promUrl}
+			and datasource= #{datasource} and dt &gt;= #{startDate} and dt &lt;= #{endDate}
+			group by sku_id, sku_name, catdname1, catdname2, catdname3, brandname, sku_start_date
+		) where sku_start_date &lt;= #{endDate} and (sku_end_date &gt;= #{startDate} or sku_end_date is null)
+	</select>
+	
+	<select id="queryPromSkuSessionInfo" parameterType="com.gome.promsku.model.PromSkuAnalyseQueryParam" resultMap="promSkuSessionInfoResultMap">
+		select  sum(sku_uv) as sku_uv,  sum(sku_click) as sku_click
+	    from kylin_report_db.session_prom_sku_combine where prom_url= #{promUrl}
+			and datasource= #{datasource} and dt &gt;= #{startDate} and dt &lt;= #{endDate} and sku_id=#{skuId} and sku_url is not null
+		group by sku_url
+		order by sku_url desc
+	    limit 1
+	</select>
+
+	<select id="queryAllStationSkuInfo" resultMap="allStationSkuInfoResultMap">
+			select sku_id,
+			    sum(order_count) as order_count,
+			    sum(order_amount) as order_amount,
+			    sum(order_quantity) as order_quantity,
+			    sum(sku_all_pv) as sku_all_pv,
+			    sum(sku_all_uv) as sku_all_uv
+			from kylin_report_db.session_prom_sku_all_station
+			where datasource='${param.datasource}' and dt between '${param.startDate}' and '${param.endDate}'
+			and sku_id in
+				<foreach collection="skuIds" index="index" item="item" open="(" separator="," close=")"> 
+	            '${item}'
+	        	</foreach>
+	        group by sku_id
+	</select>
+	
+	<select id="queryPromInfo" parameterType="com.gome.promsku.model.PromSkuAnalyseQueryParam" resultMap="promInfoResultMap">
+			select page_title, page_start_date
+			from kylin_report_db.session_prom_sku_combine
+			where prom_url= #{promUrl}
+			and datasource= #{datasource} and dt &gt;= #{startDate} and dt &lt;= #{endDate}
+			group by page_title, page_start_date, dt
+			order by dt desc
+			limit 1
+	</select>
+	
+	<select id="queryPromSkuOrderCount" parameterType="com.gome.promsku.model.PromSkuAnalyseQueryParam" resultMap="promSkuOrderCountResultMap">
+			select sum(order_count) as order_count
+			from kylin_report_db.session_prom_sku_city_order
+			where referrerprefixurl=#{promUrl} and datasource=#{datasource} and dt &gt;= #{startDate} and dt &lt;= #{endDate}
+			and skuid=#{skuId}
+	</select>
+	
+	<select id="queryPromSkuOrderAmountQuantity" parameterType="com.gome.promsku.model.PromSkuAnalyseQueryParam" resultMap="promSkuOrderAmountQuantityResultMap">
+			select sum(order_amount) as order_amount, sum(order_quantity) as order_quantity
+			from kylin_report_db.session_prom_sku_city_order_a_q
+			where referrerprefixurl=#{promUrl} and datasource=#{datasource} and dt &gt;= #{startDate} and dt &lt;= #{endDate}
+			and skuid=#{skuId}
+	</select>
+	
+	<select id="queryCityAvailableselling" parameterType="com.gome.promsku.model.PromSkuAnalyseQueryParam" resultMap="availablesellingResultMap">
+			select daid, max(availableselling) as availableselling from kylin_report_db.session_prom_sku_city_availableselling
+			where skuid=#{param.skuId} and dt=#{param.endDate}
+			and daid in
+			<foreach collection="daids" index="index" item="item" open="(" separator="," close=")"> 
+	            '${item}'
+	    	</foreach>
+	    	group by daid
+			
+	</select>
+	
+	<select id="queryPromSkuCityOrderCount" resultMap="promSkuCityOrderCountResultMap">
+		select city_name, sum(order_count) as order_count
+	    from kylin_report_db.session_prom_sku_city_order
+	    where referrerprefixurl=#{param.promUrl} and datasource=#{param.datasource} and dt &gt;= #{param.startDate} and dt &lt;= #{param.endDate}
+	    and city_name in
+	    <foreach collection="cityNames" index="index" item="item" open="(" separator="," close=")"> 
+	            '${item}'
+	    </foreach>
+		and skuid=#{param.skuId}
+	    group by city_name
+	</select>
+	
+	<select id="queryPromSkuCityOrderQuantity" resultMap="promSkuCityOrderQuantityResultMap">
+		select city_name, sum(order_quantity) as order_quantity
+   		from kylin_report_db.session_prom_sku_city_order_a_q
+	    where referrerprefixurl=#{param.promUrl} and datasource=#{param.datasource} and dt &gt;= #{param.startDate} and dt &lt;= #{param.endDate}
+	    and city_name in
+	    <foreach collection="cityNames" index="index" item="item" open="(" separator="," close=")"> 
+	            '${item}'
+	    </foreach>
+		and skuid=#{param.skuId}
+	    group by city_name
+	</select>
+	
+	<select id="queryPromSkuCityPv" resultMap="promSkuCityPvResultMap">
+		select city_name, sum(pv) as pv
+	    from kylin_report_db.session_prom_sku_city_pv
+	    where referrerprefixurl='${param.promUrl}' and datasource='${param.datasource}' and dt &gt;= '${param.startDate}' and dt &lt;= '${param.endDate}'
+	    and city_name in
+	    <foreach collection="cityNames" index="index" item="item" open="(" separator="," close=")"> 
+	            '${item}'
+	    </foreach>
+		and skuid='${param.skuId}'
+	    group by city_name
+	</select>
+	
+	<select id="queryAvailableSellingWarnSku" resultType="String">
+		select distinct skuid from kylin_report_db.session_prom_sku_city_availableselling
+		where skuid in
+			<foreach collection="skuIds" index="index" item="item" open="(" separator="," close=")"> 
+	            '${item}'
+	    	</foreach>
+		and dt='${param.endDate}'
+		and daid in
+			<foreach collection="daids" index="index" item="item" open="(" separator="," close=")"> 
+	            '${item}'
+	    	</foreach>
+	    group by skuid, daid
+	    having max(availableselling) &lt;= ${warnThreshold}
+	</select>
+	
+	<select id="queryAvailableSellingWarnSkuWithZero" resultType="String">
+		select distinct skuid from kylin_report_db.session_prom_sku_city_availableselling
+		where skuid in
+			<foreach collection="skuIds" index="index" item="item" open="(" separator="," close=")"> 
+	            '${item}'
+	    	</foreach>
+		and dt='${param.endDate}'
+		and daid in
+			<foreach collection="daids" index="index" item="item" open="(" separator="," close=")"> 
+	            '${item}'
+	    	</foreach>
+	    group by skuid
+	    having count(daid) &lt; 5
+	</select>
+	
+	<select id="queryModelIdProductId" parameterType="com.gome.promsku.model.PromSkuAnalyseQueryParam" resultMap="promSkuModelidProductIdResultMap">
+		select distinct intcmpModeId, productid
+		from kylin_report_db.session_prom_sku_modelid_productid
+		where prom_url = #{promUrl}
+		and datasource = #{datasource}
+		and dt &gt;= #{startDate} and dt &lt;= #{endDate}
+		and skuid=#{skuId}
+	</select>
+	
+		
+	<select id="queryPromSkuOrderCountBatch" resultMap="promSkuOrderCountBatchResultMap">
+			select skuid, sum(order_count) as order_count
+			from kylin_report_db.session_prom_sku_city_order
+			where referrerprefixurl=#{param.promUrl} and datasource=#{param.datasource} and dt &gt;= #{param.startDate} and dt &lt;= #{param.endDate}
+			and skuid in
+				<foreach collection="skuIds" index="index" item="item" open="(" separator="," close=")"> 
+	            '${item}'
+	        	</foreach>
+			group by skuid
+	</select>
+	
+	<select id="queryPromSkuOrderAmountQuantityBatch" resultMap="promSkuOrderAmountQuantityBatchResultMap">
+			select skuid, sum(order_amount) as order_amount, sum(order_quantity) as order_quantity
+			from kylin_report_db.session_prom_sku_city_order_a_q
+			where referrerprefixurl=#{param.promUrl} and datasource=#{param.datasource} and dt &gt;= #{param.startDate} and dt &lt;= #{param.endDate}
+			and skuid in
+				<foreach collection="skuIds" index="index" item="item" open="(" separator="," close=")"> 
+	            '${item}'
+	        	</foreach>
+			group by skuid
+	</select>
+</mapper>

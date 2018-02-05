@@ -1,0 +1,447 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gome.dao.IKylinQueryDao">
+
+	<resultMap type="com.gome.dao.model.PageView" id="allStationResultMap">
+		<result property="uv" column="uv"/>
+		<result property="visits" column="visits"/>
+		<result property="pv" column="pv"/>
+		<result property="bounce" column="bounces"/>
+	</resultMap>
+	
+	<!-- 查询页面的汇总信息 -->
+	<resultMap type="com.gome.dao.model.PageView" id="pageSummaryOfSumItemResultMap">
+		<result property="pageSite" column="pagesite"/>
+		<result property="pageChannel" column="pagechannel"/>
+		<result property="pageType" column="pagetype"/>
+		<result property="pv" column="pv"/>
+		<result property="viewTime" column="viewtime"/>
+		<result property="entriesCount" column="entries"/>
+		<result property="exitCount" column="exits"/>
+		<result property="bounce" column="bounces"/>
+	</resultMap>
+	
+	<resultMap type="com.gome.dao.model.PageView" id="pageSummaryOfNotSumItemResultMap">
+		<result property="pageSite" column="pagesite"/>
+		<result property="pageChannel" column="pagechannel"/>
+		<result property="pageType" column="pagetype"/>
+		<result property="uv" column="uv"/>
+		<result property="visits" column="visits"/>
+	</resultMap>
+	
+	<resultMap type="com.gome.dao.model.PageView" id="pageSummaryOfOrderItemResultMap">
+		<result property="participationOrdersCount" column="ordercount"/>
+		<result property="orderTotalAmount" column="orderamount"/>
+	</resultMap>
+	
+	<select id="queryAllStation" parameterType="com.gome.Controller.model.QueryParam"  resultMap="allStationResultMap">
+			select sum(uv) as uv, sum(visits) as visits, sum(pv) as pv, sum(bounces) as bounces
+			from(
+				select
+				COUNT(distinct visitorId) as uv,
+				count(distinct sessionId) as visits,
+				sum(pv) as pv,
+				sum(bounces) as bounces
+				from kylin_report_db.SESSION_HOTMAP_WITH_PAGETYPE
+				where datasource = '${dataSource}'  and "DAY" &gt;= '${startTime}' and "DAY" &lt;= '${endTime}'
+				<if test="channel != null">
+					and channel='${channel}'
+				</if>
+				group by "DAY"
+			)
+	</select>
+	
+	<select id="querySummaryPageOfSumItem" parameterType="com.gome.Controller.model.QueryParam" resultMap="pageSummaryOfSumItemResultMap">
+			select pagesite, pagechannel, pagetype,
+			sum(pv) as pv,
+			sum(viewTime) as viewtime,
+			sum(entries) as entries,
+			sum(exits) as exits,
+			sum(bounces) as bounces
+			from kylin_report_db.SESSION_HOTMAP_WITH_PAGETYPE
+			where datasource = '${dataSource}'  and "DAY" between '${startTime}' and '${endTime}' and prefixurl='${pageUrl}'
+			<if test="channel != null">
+				and channel='${channel}'
+			</if>
+			group by pagesite, pagechannel, pagetype
+	</select>
+	
+	<select id="querySummaryPageOfOrderItem" parameterType="com.gome.Controller.model.QueryParam" resultMap="pageSummaryOfOrderItemResultMap">
+			select sum(ordercount) as ordercount, sum(orderamount) as orderamount
+			from kylin_report_db.session_hotmap_order
+			where datasource = '${dataSource}'  and "DAY" between '${startTime}' and '${endTime}' and prefixurl='${pageUrl}'
+			<if test="channel != null">
+				and channel='${channel}'
+			</if>
+	</select>
+	
+	<select id="querySummaryPageOfNotSumItem" parameterType="com.gome.Controller.model.QueryParam" resultMap="pageSummaryOfNotSumItemResultMap">
+			select pagesite, pagechannel, pagetype, sum(uv) as uv, sum(visits) as visits
+			from (
+				select pagesite, pagechannel, pagetype,
+				COUNT(distinct visitorId) as uv,
+				count(distinct sessionId) as visits
+				from kylin_report_db.SESSION_HOTMAP_WITH_PAGETYPE
+				where datasource = '${dataSource}'  and "DAY" between '${startTime}' and '${endTime}' and prefixurl='${pageUrl}'
+				<if test="channel != null">
+					and channel='${channel}'
+				</if>
+				group by "DAY",pagesite, pagechannel, pagetype
+			)group by pagesite, pagechannel, pagetype
+	</select>
+	
+	<select id="queryClickForPage" parameterType="com.gome.Controller.model.QueryParam" resultType="Long">
+			select sum(pv) as click
+			from kylin_report_db.SESSION_HOTMAP_WITH_PAGETYPE
+			where
+			datasource like '%${dataSourceLike}%' escape '-'
+			and "DAY" between '${startTime}' and '${endTime}' and referrerprefixurl='${pageUrl}'
+			and intcmp &lt;&gt; '' and intcmp is not null 
+			<if test="channel != null">
+				and channel='${channel}'
+			</if>
+	</select>
+	
+	<!-- 查询页面的资源位信息 -->
+	<resultMap type="com.gome.dao.model.PageResource" id="resourcesOfSumItemResultMap">
+		<result property="code" column="intcmp"/>
+		<result property="click" column="click"/>
+		<result property="pv" column="followingPv"/>
+		<result property="orderCount" column="ordercount"/>
+		<result property="saleAmount" column="orderamount"/>
+	</resultMap>
+	
+	<resultMap type="com.gome.dao.model.PageResource" id="resourcesOfNotSumItemResultMap">
+		<result property="code" column="intcmp"/>
+		<result property="vistor" column="visits"/>
+		<result property="uv" column="uv"/>
+		<result property="orderALLCount" column="allOrderCount"/>
+	</resultMap>
+	
+	<select id="queryResourcesOfSumItem" parameterType="com.gome.Controller.model.QueryParam" resultMap="resourcesOfSumItemResultMap">
+			select intcmp,
+			sum(pv) as click,
+			sum(followingPv) as followingPv,
+			sum(orderCount) as orderCount,
+			sum(orderAmount) as orderAmount
+			from kylin_report_db.SESSION_HOTMAP_WITH_PAGETYPE
+			where
+			datasource like '%${dataSourceLike}%' escape '-'
+	    	and "DAY" between '${startTime}' and '${endTime}' and referrerprefixurl='${pageUrl}' and intcmp &lt;&gt; '' and intcmp is not null
+			<if test="channel != null">
+				and channel='${channel}'
+			</if>
+			group by intcmp
+	</select>
+	
+	<select id="queryResourcesOfNotSumItem" parameterType="com.gome.Controller.model.QueryParam" resultMap="resourcesOfNotSumItemResultMap">
+			select intcmp, sum(visits) as visits, sum(uv) as uv, sum(allOrderCount) as allOrderCount
+			from (
+				select intcmp,"DAY",
+				count(distinct sessionId) as visits,
+				count(distinct visitorId) as uv,
+				max(allOrderCount) as allOrderCount
+				from kylin_report_db.SESSION_HOTMAP_WITH_PAGETYPE
+				where
+				datasource like '%${dataSourceLike}%' escape '-'
+	    		and "DAY" between '${startTime}' and '${endTime}' and referrerprefixurl='${pageUrl}' and intcmp is not null
+				<if test="channel != null">
+					and channel='${channel}'
+				</if>
+				group by intcmp,"DAY"
+			) group by intcmp
+	</select>
+	
+	<select id="queryAllOrderCountOfAllStation" parameterType="com.gome.Controller.model.QueryParam" resultType="Long">
+			select sum(allOrderCount) as allOrderCount
+			from(
+				select max(allOrderCount) as allOrderCount
+				from kylin_report_db.SESSION_HOTMAP_WITH_PAGETYPE
+				where datasource = '${dataSource}'  and "DAY" between '${startTime}' and '${endTime}'
+				<if test="channel != null">
+					and channel='${channel}'
+				</if>
+				group by "DAY"
+			)
+	</select>
+	
+	<!-- 查询资源位历史信息 -->
+	<resultMap type="com.gome.dao.model.PageResource" id="totalSumItemOfIntcmpResultMap">
+		<result property="click" column="click"/>
+		<result property="pv" column="followingPv"/>
+		<result property="orderCount" column="orderCount"/>
+		<result property="saleAmount" column="orderAmount"/>
+	</resultMap>
+	
+	<resultMap type="com.gome.dao.model.PageResource" id="totalNotSumItemOfIntcmpResultMap">
+		<result property="vistor" column="visits"/>
+		<result property="uv" column="uv"/>
+	</resultMap>
+	
+	<resultMap type="com.gome.dao.model.PageResource" id="historySumItemOfIntcmpResultMap">
+		<result property="url" column="url"/>
+		<result property="title" column="pagetitle"/>
+		<result property="click" column="click"/>
+		<result property="pv" column="followingPv"/>
+		<result property="orderCount" column="orderCount"/>
+		<result property="saleAmount" column="orderAmount"/>
+	</resultMap>
+	
+	<resultMap type="com.gome.dao.model.PageResource" id="historyNotSumItemOfIntcmpResultMap">
+		<result property="url" column="url"/>
+		<result property="title" column="pagetitle"/>
+		<result property="vistor" column="visits"/>
+		<result property="uv" column="uv"/>
+	</resultMap>
+	
+	<select id="queryTotalSumItemOfIntcmp" parameterType="com.gome.Controller.model.QueryParam" resultMap="totalSumItemOfIntcmpResultMap">
+			select
+			sum(pv) as click,
+			sum(followingPv) as followingPv,
+			sum(orderCount) as orderCount,
+			sum(orderAmount) as orderAmount
+			from kylin_report_db.SESSION_HOTMAP_WITH_PAGETYPE
+			where
+			datasource like '%${dataSourceLike}%' escape '-'
+	    	and "DAY" between '${startTime}' and '${endTime}' and referrerprefixurl='${pageUrl}' and intcmp='${intcmp}'
+			<if test="channel != null">
+				and channel='${channel}'
+			</if>
+	</select>
+	
+	<select id="queryTotalNotSumItemOfIntcmp" parameterType="com.gome.Controller.model.QueryParam" resultMap="totalNotSumItemOfIntcmpResultMap">
+			select sum(visits) as visits, sum(uv) as uv
+			from (
+				select "DAY",
+				count(distinct sessionId) as visits,
+				count(distinct visitorId) as uv
+				from kylin_report_db.SESSION_HOTMAP_WITH_PAGETYPE
+				where
+				datasource like '%${dataSourceLike}%' escape '-'
+	    		and "DAY" between '${startTime}' and '${endTime}' and referrerprefixurl='${pageUrl}' and intcmp='${intcmp}'
+				<if test="channel != null">
+					and channel='${channel}'
+				</if>
+				group by "DAY"
+			)
+	</select>
+	
+	<select id="queryHistoryOfSumItemForIntcmp" parameterType="com.gome.Controller.model.QueryParam" resultMap="historySumItemOfIntcmpResultMap">
+			select url, pagetitle,
+			sum(pv) as click,
+			sum(followingPv) as followingPv,
+			sum(orderCount) as orderCount,
+			sum(orderAmount) as orderAmount
+			from kylin_report_db.SESSION_HOTMAP_WITH_PAGETYPE
+			where
+			datasource like '%${dataSourceLike}%' escape '-'
+	    	and "DAY" between '${startTime}' and '${endTime}' and referrerprefixurl='${pageUrl}' and intcmp='${intcmp}'
+			<if test="channel != null">
+				and channel='${channel}'
+			</if>
+			group by url, pagetitle
+	</select>
+	
+	<select id="queryHistoryOfNotSumItemForIntcmp" parameterType="com.gome.Controller.model.QueryParam" resultMap="historyNotSumItemOfIntcmpResultMap">
+			select url, pagetitle, sum(visits) as visits, sum(uv) as uv
+			from (
+			select url, pagetitle,"DAY",
+			count(distinct sessionId) as visits,
+			count(distinct visitorId) as uv
+			from kylin_report_db.SESSION_HOTMAP_WITH_PAGETYPE
+			where
+			datasource like '%${dataSourceLike}%' escape '-'
+	    	and "DAY" between '${startTime}' and '${endTime}' and referrerprefixurl='${pageUrl}' and intcmp='${intcmp}'
+			<if test="channel != null">
+				and channel='${channel}'
+			</if>
+			group by url, pagetitle, "DAY"
+			)group by url, pagetitle
+	</select>
+	
+	<!-- 图表查询 -->
+	<resultMap type="com.gome.dao.model.PageView" id="pageClickForTimeResultMap">
+		<result property="code" column="code"/>
+		<result property="click" column="click"/>
+	</resultMap>
+	
+	<resultMap type="com.gome.dao.model.PageView" id="pageSummaryOfFullItemResultMap">
+		<result property="code" column="code"/>
+		<result property="pv" column="pv"/>
+		<result property="viewTime" column="viewtime"/>
+		<result property="entriesCount" column="entries"/>
+		<result property="exitCount" column="exits"/>
+		<result property="bounce" column="bounces"/>
+		<result property="uv" column="uv"/>
+		<result property="visits" column="visits"/>
+	</resultMap>
+	
+	<resultMap type="com.gome.dao.model.PageView" id="pageOrderItemForTimeResultMap">
+		<result property="code" column="code"/>
+		<result property="participationOrdersCount" column="ordercount"/>
+		<result property="orderTotalAmount" column="orderamount"/>
+	</resultMap>
+	
+	
+	<resultMap type="com.gome.dao.model.PageChannel" id="pageSummaryOfSumItemForChannelResultMap">
+		<result property="channelCode" column="channel"/>
+		<result property="pv" column="pv"/>
+		<result property="viewTime" column="viewtime"/>
+		<result property="entriesCount" column="entries"/>
+		<result property="exitCount" column="exits"/>
+		<result property="bounce" column="bounces"/>
+	</resultMap>
+	
+	<resultMap type="com.gome.dao.model.PageChannel" id="pageSummaryOfNotSumItemForChannelResultMap">
+		<result property="channelCode" column="channel"/>
+		<result property="uv" column="uv"/>
+		<result property="vistor" column="visits"/>
+	</resultMap>
+	
+	<resultMap type="com.gome.dao.model.PageChannel" id="pageOrderItemForChannelResultMap">
+		<result property="channelCode" column="channel"/>
+		<result property="participationOrdersCount" column="ordercount"/>
+		<result property="orderTotalAmount" column="orderamount"/>
+	</resultMap>
+	
+	<resultMap type="com.gome.dao.model.PageChannel" id="pageClickForChannelResultMap">
+		<result property="channelCode" column="channel"/>
+		<result property="click" column="click"/>
+	</resultMap>
+	
+	<select id="queryPageFullItemOfHour" parameterType="com.gome.Controller.model.QueryParam" resultMap="pageSummaryOfFullItemResultMap">
+			select "HOUR" as code,
+			sum(pv) as pv,
+			sum(viewTime) as viewtime,
+			sum(entries) as entries,
+			sum(exits) as exits,
+			sum(bounces) as bounces,
+			COUNT(distinct visitorId) as uv,
+			count(distinct sessionId) as visits
+			from kylin_report_db.SESSION_HOTMAP_WITH_PAGETYPE
+			where datasource = '${dataSource}'  and "DAY" between '${startTime}' and '${endTime}' and prefixurl='${pageUrl}'
+			<if test="channel != null">
+				and channel='${channel}'
+			</if>
+			group by "HOUR"
+	</select>
+	
+	<select id="queryPageOrderItemOfHour" parameterType="com.gome.Controller.model.QueryParam" resultMap="pageOrderItemForTimeResultMap">
+			select "HOUR" as code,sum(ordercount) as ordercount, sum(orderamount) as orderamount
+			from kylin_report_db.session_hotmap_order
+			where datasource = '${dataSource}'  and "DAY" between '${startTime}' and '${endTime}' and prefixurl='${pageUrl}'
+			<if test="channel != null">
+				and channel='${channel}'
+			</if>
+			group by "HOUR"
+	</select>
+	
+	<select id="queryClickOfHour" parameterType="com.gome.Controller.model.QueryParam" resultMap="pageClickForTimeResultMap">
+			select "HOUR" as code,
+			sum(pv) as click
+			from kylin_report_db.SESSION_HOTMAP_WITH_PAGETYPE
+			where
+			datasource like '%${dataSourceLike}%' escape '-'
+	    	and "DAY" between '${startTime}' and '${endTime}' and referrerprefixurl='${pageUrl}'
+			and intcmp &lt;&gt; '' and intcmp is not null 
+			<if test="channel != null">
+				and channel='${channel}'
+			</if>
+			group by "HOUR"
+	</select>
+	
+	<select id="queryPageFullItemOfDay" parameterType="com.gome.Controller.model.QueryParam" resultMap="pageSummaryOfFullItemResultMap">
+			select "DAY" as code,
+			sum(pv) as pv,
+			sum(viewTime) as viewtime,
+			sum(entries) as entries,
+			sum(exits) as exits,
+			sum(bounces) as bounces,
+			COUNT(distinct visitorId) as uv,
+			count(distinct sessionId) as visits
+			from kylin_report_db.SESSION_HOTMAP_WITH_PAGETYPE
+			where datasource = '${dataSource}' and "DAY" between '${startTime}' and '${endTime}' and prefixurl='${pageUrl}'
+			<if test="channel != null">
+				and channel='${channel}'
+			</if>
+			group by "DAY"
+	</select>
+	
+	<select id="queryPageOrderItemOfDay" parameterType="com.gome.Controller.model.QueryParam" resultMap="pageOrderItemForTimeResultMap">
+			select "DAY" as code,sum(ordercount) as ordercount, sum(orderamount) as orderamount
+			from kylin_report_db.session_hotmap_order
+			where datasource = '${dataSource}' and "DAY" between '${startTime}' and '${endTime}' and prefixurl='${pageUrl}'
+			<if test="channel != null">
+				and channel='${channel}'
+			</if>
+			group by "DAY"
+	</select>
+	
+	<select id="queryClickOfDay" parameterType="com.gome.Controller.model.QueryParam" resultMap="pageClickForTimeResultMap">
+			select "DAY" as code,
+			sum(pv) as click
+			from kylin_report_db.SESSION_HOTMAP_WITH_PAGETYPE
+			where
+			datasource like '%${dataSourceLike}%' escape '-'
+	    	and "DAY" between '${startTime}' and '${endTime}' and referrerprefixurl='${pageUrl}'
+			and intcmp &lt;&gt; '' and intcmp is not null 
+			<if test="channel != null">
+				and channel='${channel}'
+			</if>
+			group by "DAY"
+	</select>
+	
+	<select id="queryPageSumItemOfChannel" parameterType="com.gome.Controller.model.QueryParam" resultMap="pageSummaryOfSumItemForChannelResultMap">
+			select channel,
+			sum(pv) as pv,
+			sum(viewTime) as viewtime,
+			sum(entries) as entries,
+			sum(exits) as exits,
+			sum(bounces) as bounces
+			from kylin_report_db.SESSION_HOTMAP_WITH_PAGETYPE
+			where datasource = '${dataSource}'  and "DAY" between '${startTime}' and '${endTime}' and prefixurl='${pageUrl}'
+			<if test="channel != null">
+				and channel='${channel}'
+			</if>
+			group by channel
+	</select>
+	
+	<select id="queryPageNotSumItemOfChannel" parameterType="com.gome.Controller.model.QueryParam" resultMap="pageSummaryOfNotSumItemForChannelResultMap">
+			select channel, sum(uv) as uv, sum(visits) as visits
+			from (
+				select channel,"DAY",
+				COUNT(distinct visitorId) as uv,
+				count(distinct sessionId) as visits
+				from kylin_report_db.SESSION_HOTMAP_WITH_PAGETYPE
+				where datasource = '${dataSource}'  and "DAY" between '${startTime}' and '${endTime}' and prefixurl='${pageUrl}'
+				<if test="channel != null">
+					and channel='${channel}'
+				</if>
+				group by channel,"DAY"
+			)group by channel
+	</select>
+	
+	<select id="queryPageOrderItemOfChannel" parameterType="com.gome.Controller.model.QueryParam" resultMap="pageOrderItemForChannelResultMap">
+			select channel,sum(ordercount) as ordercount, sum(orderamount) as orderamount
+			from kylin_report_db.session_hotmap_order
+			where datasource = '${dataSource}'  and "DAY" between '${startTime}' and '${endTime}' and prefixurl='${pageUrl}'
+			<if test="channel != null">
+				and channel='${channel}'
+			</if>
+			group by channel
+	</select>
+	
+	<select id="queryClickOfChannel" parameterType="com.gome.Controller.model.QueryParam" resultMap="pageClickForChannelResultMap">
+			select channel,
+			sum(pv) as click
+			from kylin_report_db.SESSION_HOTMAP_WITH_PAGETYPE
+			where
+			datasource like '%${dataSourceLike}%' escape '-'
+	    	and "DAY" between '${startTime}' and '${endTime}' and referrerprefixurl='${pageUrl}'
+			and intcmp &lt;&gt; '' and intcmp is not null 
+			<if test="channel != null">
+				and channel='${channel}'
+			</if>
+			group by channel
+	</select>
+</mapper>

@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gome.pathanalyseplus.dao.PathAnalysePlusQueryDao">
+
+	<select id="queryAllStation" parameterType="com.gome.pathanalyse.model.PathAnalyseQueryParam"  resultType="com.gome.dao.model.PageView">
+			select sum(uv) as uv, 
+			sum(visits) as visits, 
+			sum(pv) as pv, 
+			sum(bounces) as bounce
+			from  hotmap_path_page_pv_base
+			where datasource = #{datasource}  and dt &gt;= #{visitStartDay} and dt &lt;= #{visitEndDay}
+			
+	</select>
+	
+	<select id="querySummaryOfSumItemForPagetype" parameterType="com.gome.pathanalyse.model.PathAnalyseQueryParam" resultType="com.gome.dao.model.PageView">
+			select 
+			sum(pv) as pv,
+			sum(viewTime) as viewtime,
+			sum(entries) as entriesCount,
+			sum(exits) as exitCount,
+			sum(bounces) as bounce,
+			sum(uv) as uv, 
+			sum(visits) as visits
+			from hotmap_path_page_pv_base
+			where datasource = #{datasource}  and dt &gt;= #{visitStartDay} and dt &lt;= #{visitEndDay}
+			<if test="pageSite != null">
+				and pagesite=#{pageSite}
+			</if>
+			<if test="pageChannel != null">
+				and pagechannel=#{pageChannel}
+			</if> 
+			<if test="pageType != null">
+				and pagetype=#{pageType}
+			</if>
+			
+	</select>
+	
+	<select id="querySummaryPageOfOrderItem"  parameterType="com.gome.pathanalyse.model.PathAnalyseQueryParam" resultType="com.gome.dao.model.PageView">
+			select 
+			sum(ordercount) as participationOrdersCount, 
+			sum(orderamount) as orderTotalAmount
+			from hotmap_path_page_participation_order
+			where datasource = #{datasource} and dt &gt;= #{visitStartDay} and dt &lt;= #{visitEndDay}
+			<if test="pageSite != null">
+				and pagesite=#{pageSite}
+			</if>
+			<if test="pageChannel != null">
+				and pagechannel=#{pageChannel}
+			</if>
+			<if test="pageType != null">
+				and pagetype=#{pageType}
+			</if>
+			<if test="channel != null">
+				and channel=#{channel}
+			</if>
+	</select>
+	
+	<select id="queryDirectEntry" parameterType="com.gome.pathanalyse.model.PathAnalyseQueryParam" resultType="com.gome.pathanalyse.model.PathAnalyseQueryResult">
+		select 
+		sum(pv) as pv, 
+		sum(uv) as uv, 
+		sum(visits) as visits 
+		from hotmap_path_page_pv
+		where dt &gt;= #{visitStartDay} and dt &lt;= #{visitEndDay} 
+		and datasource=#{datasource} 
+		and (isentrypage=1 or (isentrypage=0 and referrer${topNGroupColumn}='站外'))
+		<if test="pageSite != null">
+			and pagesite=#{pageSite}
+		</if>
+		<if test="pageChannel != null">
+			and pagechannel=#{pageChannel}
+		</if> 
+		<if test="pageType != null">
+			and pagetype=#{pageType}
+		</if>
+		<if test="prefixUrl != null">
+			and prefixurl='${prefixUrl}'
+		</if>
+		<if test="channel != null">
+			and channel=#{channel}
+		</if>
+	</select>
+	
+	<select id="queryTopNEntries" parameterType="com.gome.pathanalyse.model.PathAnalyseQueryParam" resultType="com.gome.pathanalyse.model.PathAnalyseQueryResult">
+		select 
+		(case when (referrer${topNGroupColumn} = '' or referrer${topNGroupColumn} is null) then '未获取' else referrer${topNGroupColumn} end) as code, 
+		sum(pv) as pv,
+		sum(uv) as uv, 
+		sum(visits) as visits
+		from hotmap_path_page_pv
+		where dt between '${visitStartDay}' and '${visitEndDay}' and datasource='${datasource}' and isEntryPage=0
+		<if test="pageSite != null">
+			and pagesite='${pageSite}'
+		</if>
+		<if test="pageChannel != null">
+			and pagechannel='${pageChannel}'
+		</if> 
+		<if test="pageType != null">
+			and pagetype='${pageType}'
+		</if>
+		<if test="prefixUrl != null">
+			and prefixurl='${prefixUrl}'
+		</if>
+		<if test="channel != null">
+			and channel='${channel}'
+		</if>
+		and	(referrer${topNGroupColumn} &lt;&gt; '站外' or referrer${topNGroupColumn} is null)
+		group by referrer${topNGroupColumn}
+		order by pv desc
+		limit ${pageSize} offset ${pageStart}
+	</select>
+	
+	
+	<select id="queryExit" parameterType="com.gome.pathanalyse.model.PathAnalyseQueryParam" resultType="com.gome.pathanalyse.model.PathAnalyseQueryResult">
+		select sum(pv) as pv, 
+		sum(uv) as uv, 
+		sum(visits) as visits 
+		from hotmap_path_page_pv
+		where dt &gt;= #{visitStartDay} and dt &lt;= #{visitEndDay} and datasource=#{datasource} and isexitpage=1
+		<if test="pageSite != null">
+			and pagesite=#{pageSite}
+		</if>
+		<if test="pageChannel != null">
+			and pagechannel=#{pageChannel}
+		</if> 
+		<if test="pageType != null">
+			and pagetype=#{pageType}
+		</if>
+		<if test="prefixUrl != null">
+			and prefixurl='${prefixUrl}'
+		</if>
+		<if test="channel != null">
+			and channel=#{channel}
+		</if>
+	</select>
+	
+	<select id="queryTopNFollows" parameterType="com.gome.pathanalyse.model.PathAnalyseQueryParam" resultType="com.gome.pathanalyse.model.PathAnalyseQueryResult">
+		select a.code, a.pv,a.uv,a.visits from (
+			select 
+			(case when (${topNGroupColumn} = '' or ${topNGroupColumn} is null) then '未获取' else ${topNGroupColumn} end) as code, 
+			sum(pv) as pv,
+			sum(uv) as uv, 
+			sum(visits) as visits
+			from  hotmap_path_page_pv
+			where dt between '${visitStartDay}' and '${visitEndDay}' and datasource='${datasource}' and isexitpage=0
+			<if test="pageSite != null">
+				and referrerpagesite='${pageSite}'
+			</if>
+			<if test="pageChannel != null">
+				and referrerpagechannel='${pageChannel}'
+			</if> 
+			<if test="pageType != null">
+				and referrerpagetype='${pageType}'
+			</if>
+			<if test="prefixUrl != null">
+				and referrerprefixurl='${prefixUrl}'
+			</if>
+			<if test="channel != null">
+				and channel='${channel}'
+			</if>
+			group by ${topNGroupColumn}
+		) a
+		order by pv desc
+		limit ${pageSize} offset ${pageStart}
+	</select>
+	
+	<select id="queryPvUvVisitsOfReferrerPagetype" parameterType="com.gome.pathanalyse.model.PathAnalyseQueryParam"  resultType="com.gome.pathanalyse.model.PathAnalyseQueryResult">
+		select sum(pv) as pv, 
+		sum(uv) as uv, 
+		sum(visits) as visits
+		from hotmap_path_page_pv
+		where datasource = #{datasource}  and dt &gt;= #{visitStartDay} and dt &lt;= #{visitEndDay}
+		<if test="pageSite != null">
+			and referrerpagesite=#{pageSite}
+		</if>
+		<if test="pageChannel != null">
+			and referrerpagechannel=#{pageChannel}
+		</if> 
+		<if test="pageType != null">
+			and referrerpagetype=#{pageType}
+		</if>
+		<if test="channel != null">
+			and channel=#{channel}
+		</if>
+	</select>
+	
+	
+	
+	
+</mapper>

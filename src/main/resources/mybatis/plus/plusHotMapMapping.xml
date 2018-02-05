@@ -1,0 +1,609 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gome.plus.dao.IMysqlQueryDao">
+
+        <resultMap type="com.gome.dao.model.PageView" id="allStationResultMap">
+                <result property="uv" column="uv" />
+                <result property="visits" column="visits" />
+                <result property="pv" column="pv" />
+                <result property="bounce" column="bounces" />
+        </resultMap>
+
+        <!-- 查询页面的汇总信息 -->
+        <resultMap type="com.gome.dao.model.PageView" id="pageSummaryOfSumItemResultMap">
+                <result property="pageSite" column="pagesite" />
+                <result property="pageChannel" column="pagechannel" />
+                <result property="pageType" column="pagetype" />
+                <result property="pv" column="pv" />
+                <result property="viewTime" column="viewtime" />
+                <result property="entriesCount" column="entries" />
+                <result property="exitCount" column="exits" />
+                <result property="bounce" column="bounces" />
+        </resultMap>
+
+        <resultMap type="com.gome.dao.model.PageView" id="pageSummaryOfNotSumItemResultMap">
+                <result property="pageSite" column="pagesite" />
+                <result property="pageChannel" column="pagechannel" />
+                <result property="pageType" column="pagetype" />
+                <result property="uv" column="uv" />
+                <result property="visits" column="visits" />
+        </resultMap>
+
+        <resultMap type="com.gome.dao.model.PageView" id="pageSummaryOfOrderItemResultMap">
+                <result property="participationOrdersCount" column="ordercount" />
+                <result property="orderTotalAmount" column="orderamount" />
+        </resultMap>
+
+        <select id="queryAllStation" parameterType="com.gome.Controller.model.QueryParam"
+                resultMap="allStationResultMap">
+                select sum(uv) as uv,
+                sum(visits) as visits,
+                sum(pv) as pv,
+                sum(bounces) as bounces
+                <choose>
+                        <when test="dataSource=='PLUS-LOG'">
+                                from rpt_hotMap_plus_app_base_pv
+                        </when>
+                        <otherwise>
+                                from rpt_hotMap_plus_wap_base_pv
+                        </otherwise>
+                </choose>
+
+                where `date` between '${startTime}' and '${endTime}'
+                <if test="channel != null">
+                        and channel='${channel}'
+                </if>
+        </select>
+
+        <select id="querySummaryPageOfSumItem" parameterType="com.gome.Controller.model.QueryParam"
+                resultMap="pageSummaryOfSumItemResultMap">
+                select pagesite, pagechannel, pagetype,
+                sum(pv) as pv,
+                sum(viewTime) as viewtime,
+                sum(entries) as entries,
+                sum(exits) as exits,
+                sum(bounces) as bounces
+                <choose>
+                        <when test="dataSource=='PLUS-LOG'">
+                                from rpt_hotMap_plus_app_page_path_pv
+                        </when>
+                        <otherwise>
+                                from rpt_hotMap_plus_wap_page_path_pv
+                        </otherwise>
+                </choose>
+                where `date` between '${startTime}' and '${endTime}'
+                and prefixurl='${pageUrl}'
+                <if test="channel != null">
+                        and channel='${channel}'
+                </if>
+                group by pagesite, pagechannel, pagetype
+        </select>
+
+        <select id="querySummaryPageOfOrderItem" parameterType="com.gome.Controller.model.QueryParam"
+                resultMap="pageSummaryOfOrderItemResultMap">
+                select
+                sum(ordercount) as ordercount,
+                sum(orderamount) as orderamount
+                <choose>
+                        <when test="dataSource=='PLUS-LOG'">
+                                from rpt_hotMap_plus_app_page_order
+                        </when>
+                        <otherwise>
+                                from rpt_hotMap_plus_wap_page_order
+                        </otherwise>
+                </choose>
+                where `date` between '${startTime}' and '${endTime}'
+                and prefixurl='${pageUrl}'
+                <if test="channel != null">
+                        and channel='${channel}'
+                </if>
+        </select>
+
+        <select id="querySummaryPageOfNotSumItem" parameterType="com.gome.Controller.model.QueryParam"
+                resultMap="pageSummaryOfNotSumItemResultMap">
+                select
+                pagesite,
+                pagechannel,
+                pagetype,
+                sum(uv) as uv,
+                sum(visits) as visits
+                <choose>
+                        <when test="dataSource=='PLUS-LOG'">
+                                from rpt_hotMap_plus_app_page_path_pv
+                        </when>
+                        <otherwise>
+                                from rpt_hotMap_plus_wap_page_path_pv
+                        </otherwise>
+                </choose>
+                where `date` between '${startTime}' and '${endTime}'
+                and prefixurl='${pageUrl}'
+                <if test="channel != null">
+                        and channel='${channel}'
+                </if>
+                group by pagesite, pagechannel, pagetype
+        </select>
+
+        <select id="queryClickForPage" parameterType="com.gome.Controller.model.QueryParam"
+                resultType="Long">
+                select sum(click) as click
+                <choose>
+                        <when test="dataSource=='PLUS-LOG'">
+                                from rpt_hotMap_plus_app_base_pv
+                        </when>
+                        <otherwise>
+                                from rpt_hotMap_plus_wap_base_pv
+                        </otherwise>
+                </choose>
+                where `date` between '${startTime}' and '${endTime}'
+                and referrerprefixurl='${pageUrl}'
+                and intcmp &lt;&gt; '' and intcmp is not null
+                <if test="channel != null">
+                        and channel='${channel}'
+                </if>
+        </select>
+
+        <!-- 查询页面的资源位信息 -->
+        <resultMap type="com.gome.dao.model.PageResource" id="resourcesOfSumItemResultMap">
+                <result property="code" column="intcmp" />
+                <result property="click" column="click" />
+                <result property="pv" column="followingPv" />
+                <result property="orderCount" column="ordercount" />
+                <result property="saleAmount" column="orderamount" />
+        </resultMap>
+
+        <resultMap type="com.gome.dao.model.PageResource" id="resourcesOfNotSumItemResultMap">
+                <result property="code" column="intcmp" />
+                <result property="vistor" column="visits" />
+                <result property="uv" column="uv" />
+                <result property="orderALLCount" column="allOrderCount" />
+        </resultMap>
+
+        <select id="queryResourcesOfSumItem" parameterType="com.gome.Controller.model.QueryParam"
+                resultMap="resourcesOfSumItemResultMap">
+                select intcmp,
+                sum(click) as click,
+                sum(followingPv) as followingPv,
+                sum(orderCount) as orderCount,
+                sum(orderAmount) as orderAmount
+                <choose>
+                        <when test="dataSource=='PLUS-LOG'">
+                                from rpt_hotMap_plus_app_resource_sumItem
+                        </when>
+                        <otherwise>
+                                from rpt_hotMap_plus_wap_resource_sumItem
+                        </otherwise>
+                </choose>
+                where `date` between '${startTime}' and '${endTime}'
+                and referrerprefixurl='${pageUrl}'
+                and intcmp &lt;&gt; '' and intcmp is not null
+                <if test="channel != null">
+                        and channel='${channel}'
+                </if>
+                group by intcmp
+        </select>
+
+        <select id="queryResourcesOfNotSumItem" parameterType="com.gome.Controller.model.QueryParam"
+                resultMap="resourcesOfNotSumItemResultMap">
+                select
+                intcmp,
+                sum(visits) as visits,
+                sum(uv) as uv,
+                (select max(allOrderCount) from rpt_hotMap_allOrderCount where datasource = 'PLUS-WAP' and `date` between '${startTime}' and '${endTime}') as allOrderCount
+                from rpt_hotMap_plus_wap_base_pv
+                where `date` between '${startTime}' and '${endTime}'
+                and referrerprefixurl='${pageUrl}'
+                and intcmp &lt;&gt; '' and intcmp is not null
+                <if test="channel != null">
+                        and channel='${channel}'
+                </if>
+                group by intcmp
+        </select>
+
+        <select id="queryAllOrderCountOfAllStation" parameterType="com.gome.Controller.model.QueryParam"
+                resultType="Long">
+                select sum(allOrderCount) as allOrderCount
+                from rpt_hotMap_allOrderCount
+                where `date` between '${startTime}' and '${endTime}'
+        </select>
+
+        <!-- 查询资源位历史信息 -->
+        <resultMap type="com.gome.dao.model.PageResource" id="totalSumItemOfIntcmpResultMap">
+                <result property="click" column="click" />
+                <result property="pv" column="followingPv" />
+                <result property="orderCount" column="orderCount" />
+                <result property="saleAmount" column="orderAmount" />
+        </resultMap>
+
+        <resultMap type="com.gome.dao.model.PageResource" id="totalNotSumItemOfIntcmpResultMap">
+                <result property="vistor" column="visits" />
+                <result property="uv" column="uv" />
+        </resultMap>
+
+        <resultMap type="com.gome.dao.model.PageResource" id="historySumItemOfIntcmpResultMap">
+                <result property="url" column="url" />
+                <result property="title" column="pagetitle" />
+                <result property="click" column="click" />
+                <result property="pv" column="followingPv" />
+                <result property="orderCount" column="orderCount" />
+                <result property="saleAmount" column="orderAmount" />
+        </resultMap>
+
+        <resultMap type="com.gome.dao.model.PageResource" id="historyNotSumItemOfIntcmpResultMap">
+                <result property="url" column="url" />
+                <result property="title" column="pagetitle" />
+                <result property="vistor" column="visits" />
+                <result property="uv" column="uv" />
+        </resultMap>
+
+        <select id="queryTotalSumItemOfIntcmp" parameterType="com.gome.Controller.model.QueryParam"
+                resultMap="totalSumItemOfIntcmpResultMap">
+                select
+                sum(click) as click,
+                sum(followingPv) as followingPv,
+                sum(orderCount) as orderCount,
+                sum(orderAmount) as orderAmount
+                <choose>
+                        <when test="dataSource=='PLUS-LOG'">
+                                from rpt_hotMap_plus_app_resource_sumItem
+                        </when>
+                        <otherwise>
+                                from rpt_hotMap_plus_wap_resource_sumItem
+                        </otherwise>
+                </choose>
+                where `date` between '${startTime}' and '${endTime}'
+                and referrerprefixurl='${pageUrl}'
+                and intcmp='${intcmp}'
+                <if test="channel != null">
+                        and channel='${channel}'
+                </if>
+        </select>
+
+        <select id="queryTotalNotSumItemOfIntcmp" parameterType="com.gome.Controller.model.QueryParam"
+                resultMap="totalNotSumItemOfIntcmpResultMap">
+                select
+                sum(visits) as visits,
+                sum(uv) as uv
+                <choose>
+                        <when test="dataSource=='PLUS-LOG'">
+                                from rpt_hotMap_plus_app_base_pv
+                        </when>
+                        <otherwise>
+                                from rpt_hotMap_plus_wap_base_pv
+                        </otherwise>
+                </choose>
+                where `date` between '${startTime}' and '${endTime}'
+                and referrerprefixurl='${pageUrl}'
+                and intcmp='${intcmp}'
+                <if test="channel != null">
+                        and channel='${channel}'
+                </if>
+        </select>
+
+        <select id="queryHistoryOfSumItemForIntcmp" parameterType="com.gome.Controller.model.QueryParam"
+                resultMap="historySumItemOfIntcmpResultMap">
+                select
+                url,
+                pagetitle,
+                sum(click) as click,
+                sum(followingPv) as followingPv,
+                sum(orderCount) as orderCount,
+                sum(orderAmount) as orderAmount
+                <choose>
+                        <when test="dataSource=='PLUS-LOG'">
+                                from rpt_hotMap_plus_app_resource_sumItem
+                        </when>
+                        <otherwise>
+                                from rpt_hotMap_plus_wap_resource_sumItem
+                        </otherwise>
+                </choose>
+                where `date` between '${startTime}' and '${endTime}'
+                and referrerprefixurl='${pageUrl}'
+                and intcmp='${intcmp}'
+                <if test="channel != null">
+                        and channel='${channel}'
+                </if>
+                group by url, pagetitle
+        </select>
+
+        <select id="queryHistoryOfNotSumItemForIntcmp" parameterType="com.gome.Controller.model.QueryParam"
+                resultMap="historyNotSumItemOfIntcmpResultMap">
+                select
+                url,
+                pagetitle,
+                sum(visits) as visits,
+                sum(uv) as uv
+                <choose>
+                        <when test="dataSource=='PLUS-LOG'">
+                                from rpt_hotMap_plus_app_base_pv
+                        </when>
+                        <otherwise>
+                                from rpt_hotMap_plus_wap_base_pv
+                        </otherwise>
+                </choose>
+                where `date` between '${startTime}' and '${endTime}'
+                and referrerprefixurl='${pageUrl}'
+                and intcmp='${intcmp}'
+                <if test="channel != null">
+                        and channel='${channel}'
+                </if>
+                group by url, pagetitle
+        </select>
+
+        <!-- 图表查询 -->
+        <resultMap type="com.gome.dao.model.PageView" id="pageClickForTimeResultMap">
+                <result property="code" column="code" />
+                <result property="click" column="click" />
+        </resultMap>
+
+        <resultMap type="com.gome.dao.model.PageView" id="pageSummaryOfFullItemResultMap">
+                <result property="code" column="code" />
+                <result property="pv" column="pv" />
+                <result property="viewTime" column="viewtime" />
+                <result property="entriesCount" column="entries" />
+                <result property="exitCount" column="exits" />
+                <result property="bounce" column="bounces" />
+                <result property="uv" column="uv" />
+                <result property="visits" column="visits" />
+        </resultMap>
+
+        <resultMap type="com.gome.dao.model.PageView" id="pageOrderItemForTimeResultMap">
+                <result property="code" column="code" />
+                <result property="participationOrdersCount" column="ordercount" />
+                <result property="orderTotalAmount" column="orderamount" />
+        </resultMap>
+
+
+        <resultMap type="com.gome.dao.model.PageChannel" id="pageSummaryOfSumItemForChannelResultMap">
+                <result property="channelCode" column="channel" />
+                <result property="pv" column="pv" />
+                <result property="viewTime" column="viewtime" />
+                <result property="entriesCount" column="entries" />
+                <result property="exitCount" column="exits" />
+                <result property="bounce" column="bounces" />
+        </resultMap>
+
+        <resultMap type="com.gome.dao.model.PageChannel" id="pageSummaryOfNotSumItemForChannelResultMap">
+                <result property="channelCode" column="channel" />
+                <result property="uv" column="uv" />
+                <result property="vistor" column="visits" />
+        </resultMap>
+
+        <resultMap type="com.gome.dao.model.PageChannel" id="pageOrderItemForChannelResultMap">
+                <result property="channelCode" column="channel" />
+                <result property="participationOrdersCount" column="ordercount" />
+                <result property="orderTotalAmount" column="orderamount" />
+        </resultMap>
+
+        <resultMap type="com.gome.dao.model.PageChannel" id="pageClickForChannelResultMap">
+                <result property="channelCode" column="channel" />
+                <result property="click" column="click" />
+        </resultMap>
+
+        <select id="queryPageFullItemOfHour" parameterType="com.gome.Controller.model.QueryParam"
+                resultMap="pageSummaryOfFullItemResultMap">
+                select visit_hour as code,
+                sum(pv) as pv,
+                sum(viewTime) as viewtime,
+                sum(entries) as entries,
+                sum(exits) as exits,
+                sum(bounces) as bounces,
+                sum(uv) as uv,
+                sum(visits) as visits
+                <choose>
+                        <when test="dataSource=='PLUS-LOG'">
+                                from rpt_hotMap_plus_app_base_pv_hour
+                        </when>
+                        <otherwise>
+                                from rpt_hotMap_plus_wap_base_pv_hour
+                        </otherwise>
+                </choose>
+                where `date` between '${startTime}' and '${endTime}'
+                and prefixurl='${pageUrl}'
+                <if test="channel != null">
+                        and channel='${channel}'
+                </if>
+                group by visit_hour
+        </select>
+
+        <select id="queryPageOrderItemOfHour" parameterType="com.gome.Controller.model.QueryParam"
+                resultMap="pageOrderItemForTimeResultMap">
+                select
+                visit_hour as code,
+                sum(ordercount) as ordercount,
+                sum(orderamount) as orderamount
+                <choose>
+                        <when test="dataSource=='PLUS-LOG'">
+                                from rpt_hotMap_plus_app_base_order_hour
+                        </when>
+                        <otherwise>
+                                from rpt_hotMap_plus_wap_base_order_hour
+                        </otherwise>
+                </choose>
+                where `date` between '${startTime}' and '${endTime}'
+                and prefixurl='${pageUrl}'
+                <if test="channel != null">
+                        and channel='${channel}'
+                </if>
+                group by visit_hour
+        </select>
+
+        <select id="queryClickOfHour" parameterType="com.gome.Controller.model.QueryParam"
+                resultMap="pageClickForTimeResultMap">
+                select visit_hour as code,
+                sum(click) as click
+                <choose>
+                        <when test="dataSource=='PLUS-LOG'">
+                                from rpt_hotMap_plus_app_base_pv_hour
+                        </when>
+                        <otherwise>
+                                from rpt_hotMap_plus_wap_base_pv_hour
+                        </otherwise>
+                </choose>
+                where `date` between '${startTime}' and '${endTime}'
+                and referrerprefixurl='${pageUrl}'
+                and intcmp &lt;&gt; '' and intcmp is not null
+                <if test="channel != null">
+                        and channel='${channel}'
+                </if>
+                group by visit_hour
+        </select>
+
+        <select id="queryPageFullItemOfDay" parameterType="com.gome.Controller.model.QueryParam"
+                resultMap="pageSummaryOfFullItemResultMap">
+                select
+                `date` as code,
+                sum(pv) as pv,
+                sum(viewTime) as viewtime,
+                sum(entries) as entries,
+                sum(exits) as exits,
+                sum(bounces) as bounces,
+                max(uv) as uv,
+                max(visits) as visits
+                <choose>
+                        <when test="dataSource=='PLUS-LOG'">
+                                from rpt_hotMap_plus_app_base_pv
+                        </when>
+                        <otherwise>
+                                from rpt_hotMap_plus_wap_base_pv
+                        </otherwise>
+                </choose>
+                where `date` between '${startTime}' and '${endTime}'
+                and prefixurl='${pageUrl}'
+                <if test="channel != null">
+                        and channel='${channel}'
+                </if>
+                group by `date`
+        </select>
+
+        <select id="queryPageOrderItemOfDay" parameterType="com.gome.Controller.model.QueryParam"
+                resultMap="pageOrderItemForTimeResultMap">
+                select
+                `date` as code,
+                sum(ordercount) as ordercount,
+                sum(orderamount) as orderamount
+                <choose>
+                        <when test="dataSource=='PLUS-LOG'">
+                                from rpt_hotMap_plus_app_page_order
+                        </when>
+                        <otherwise>
+                                from rpt_hotMap_plus_wap_page_order
+                        </otherwise>
+                </choose>
+                where `date` between '${startTime}' and '${endTime}'
+                and prefixurl='${pageUrl}'
+                <if test="channel != null">
+                        and channel='${channel}'
+                </if>
+                group by `date`
+        </select>
+
+        <select id="queryClickOfDay" parameterType="com.gome.Controller.model.QueryParam"
+                resultMap="pageClickForTimeResultMap">
+                select `date` as code,
+                sum(click) as click
+                <choose>
+                        <when test="dataSource=='PLUS-LOG'">
+                                from rpt_hotMap_plus_app_base_pv
+                        </when>
+                        <otherwise>
+                                from rpt_hotMap_plus_wap_base_pv
+                        </otherwise>
+                </choose>
+                where `date` between '${startTime}' and '${endTime}'
+                and referrerprefixurl='${pageUrl}'
+                and intcmp &lt;&gt; '' and intcmp is not null
+                <if test="channel != null">
+                        and channel='${channel}'
+                </if>
+                group by `date`
+        </select>
+
+        <select id="queryPageSumItemOfChannel" parameterType="com.gome.Controller.model.QueryParam"
+                resultMap="pageSummaryOfSumItemForChannelResultMap">
+                select channel,
+                sum(pv) as pv,
+                sum(viewTime) as viewtime,
+                sum(entries) as entries,
+                sum(exits) as exits,
+                sum(bounces) as bounces
+                <choose>
+                        <when test="dataSource=='PLUS-LOG'">
+                                from rpt_hotMap_plus_app_base_pv
+                        </when>
+                        <otherwise>
+                                from rpt_hotMap_plus_wap_base_pv
+                        </otherwise>
+                </choose>
+                where `date` between '${startTime}' and '${endTime}'
+                and prefixurl='${pageUrl}'
+                <if test="channel != null">
+                        and channel='${channel}'
+                </if>
+                group by channel
+        </select>
+
+        <select id="queryPageNotSumItemOfChannel" parameterType="com.gome.Controller.model.QueryParam"
+                resultMap="pageSummaryOfNotSumItemForChannelResultMap">
+                select
+                channel,
+                max(uv) as uv,
+                max(visits) as visits
+                <choose>
+                        <when test="dataSource=='PLUS-LOG'">
+                                from rpt_hotMap_plus_app_base_pv
+                        </when>
+                        <otherwise>
+                                from rpt_hotMap_plus_wap_base_pv
+                        </otherwise>
+                </choose>
+                where `date` between '${startTime}' and '${endTime}'
+                and prefixurl='${pageUrl}'
+                <if test="channel != null">
+                        and channel='${channel}'
+                </if>
+                group by channel
+        </select>
+
+        <select id="queryPageOrderItemOfChannel" parameterType="com.gome.Controller.model.QueryParam"
+                resultMap="pageOrderItemForChannelResultMap">
+                select
+                channel,
+                sum(ordercount) as ordercount,
+                sum(orderamount) as orderamount
+                <choose>
+                        <when test="dataSource=='PLUS-LOG'">
+                                from rpt_hotMap_plus_app_page_order
+                        </when>
+                        <otherwise>
+                                from rpt_hotMap_plus_wap_page_order
+                        </otherwise>
+                </choose>
+                where `date` between '${startTime}' and '${endTime}'
+                and prefixurl='${pageUrl}'
+                <if test="channel != null">
+                        and channel='${channel}'
+                </if>
+                group by channel
+        </select>
+
+        <select id="queryClickOfChannel" parameterType="com.gome.Controller.model.QueryParam"
+                resultMap="pageClickForChannelResultMap">
+                select channel,
+                sum(click) as click
+                <choose>
+                        <when test="dataSource=='PLUS-LOG'">
+                                from rpt_hotMap_plus_app_base_pv
+                        </when>
+                        <otherwise>
+                                from rpt_hotMap_plus_wap_base_pv
+                        </otherwise>
+                </choose>
+                where `date` between '${startTime}' and '${endTime}'
+                and referrerprefixurl='${pageUrl}'
+                and intcmp &lt;&gt; '' and intcmp is not null
+                <if test="channel != null">
+                        and channel='${channel}'
+                </if>
+                group by channel
+        </select>
+</mapper>

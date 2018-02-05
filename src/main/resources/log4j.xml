@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
+
+	<!-- 控制台 -->
+	<appender name="console" class="org.apache.log4j.ConsoleAppender">
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="%d %c%n%-5p: %m%n%n" />
+		</layout>
+	</appender>
+
+	<appender name="f-all" class="org.apache.log4j.DailyRollingFileAppender">
+		<param name="file" value="./log/all.log" />
+		<param name="datePattern" value="'.'yyyy-MM-dd" />
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="%d %c%n%-5p: %m%n%n" />
+		</layout>
+		<!-- <filter class="org.apache.log4j.varia.LevelMatchFilter"> <param name="LevelToMatch" 
+			value="debug" /> </filter> -->
+	</appender>
+
+
+	<!-- 界别（从高到低）： OFF、FATAL、ERROR、WARN、INFO、DEBUG、ALL(推荐 ERROR、WARN、INFO、DEBUG) -->
+	<root>
+		<priority value="INFO" />
+		<appender-ref ref="console" />
+		<appender-ref ref="f-all" />
+
+	</root>
+
+</log4j:configuration>
