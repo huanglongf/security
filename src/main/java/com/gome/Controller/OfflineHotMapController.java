@@ -11,7 +11,7 @@ import java.util.Map;
 import javax.annotation.Resource;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,6 +74,20 @@ public class OfflineHotMapController {
 	   http://10.58.72.33:8080/homepage/home/queryPage?pageUrl=http://m.gome.com.cn/&startTime=2018-02-04&endTime=2018-02-04 资源位
 
 	 *
+	 if (prefixUrl.contains("m.gomeplus.com")) {
+	 param.setDataSource("PLUS-WAP");
+	 } else if (prefixUrl.contains("m.gome.com.cn")) {
+	 param.setDataSource("WAP");
+	 } else if(prefixUrl.contains("gomeplus.com")){
+	 param.setDataSource("PLUS-PC");
+	 }else if(prefixUrl.contains("gome.com.cn")){
+	 param.setDataSource("PC");
+	 }else{
+	 param.setDataSource("PC");
+	 }
+	 }else if(param.getDataSource().equals("null")){
+	 param.setDataSource("PC");
+	 }
 	 * @param param
 	 */
 	@RequestMapping(value = "/queryPage", produces = "application/json; charset=utf-8")
@@ -264,6 +278,7 @@ public class OfflineHotMapController {
 		// 校验请求参数
 		try {
 
+			//根据url来分析set datasource;
 			validateParam(param, true);
 
 
@@ -282,6 +297,10 @@ public class OfflineHotMapController {
 
 
 			//app首页实时热力图
+			/**
+			 * private static final String APP_DATASOURCE = "APP-LOG";
+			   private static final String PLUS_APP_DATASOURCE = "PLUS-LOG";
+			 */
 			if(APP_DATASOURCE.equals(param.getDataSource())
 					|| PLUS_APP_DATASOURCE.equals(param.getDataSource())){
 				AppHotMapQueryParam appParam = new AppHotMapQueryParam(param.getStartTime(), param.getEndTime(), param.getIntcmp());
